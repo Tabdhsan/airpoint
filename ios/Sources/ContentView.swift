@@ -173,13 +173,14 @@ struct ContentView: View {
     }
 
     var body: some View {
-        VStack(spacing: 14) {
-            header
-            speedSlider
-            remoteBanner
-            pad
-
-            controls
+        GeometryReader { geo in
+            // Unfolded iPhone Duo (626x890 pt, usually held sideways) or any landscape screen:
+            // two-handed layout. The folded Duo (narrow cover screen) and regular phones get one column.
+            if geo.size.width > 560 || geo.size.width / max(geo.size.height, 1) > 0.62 {
+                wideLayout
+            } else {
+                tallLayout
+            }
         }
         .padding()
         .onAppear {
@@ -286,34 +287,100 @@ struct ContentView: View {
     /// Media controls appear only while something is playing (or was recently paused).
     private var controls: some View {
         VStack(spacing: 8) {
-            if link.mediaActive {
-                HStack(spacing: 8) {
-                    RemoteButton(symbol: "gobackward", label: "Rewind") { model.press(.rewind) }
-                    RemoteButton(symbol: "playpause.fill", label: "Play/Pause", highlighted: true) { model.press(.playPause) }
-                    RemoteButton(symbol: "goforward", label: "Forward") { model.press(.fastForward) }
-                }
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
+            if link.mediaActive { mediaRow }
             HStack(spacing: 8) {
                 RemoteButton(symbol: "chevron.backward", label: "Back") { model.press(.back) }
                 RemoteButton(symbol: "house", label: "Home") { model.press(.home) }
-                RemoteButton(symbol: "keyboard", label: "Type") { showKeyboard = true }
-                    .disabled(!remote.isReady)
-                    .opacity(remote.isReady ? 1 : 0.35)
+                typeButton
             }
             HStack(spacing: 8) {
-                RemoteButton(symbol: model.mode == .aim ? "light.beacon.max.fill" : "light.beacon.max",
-                             label: model.mode == .aim ? "Laser on" : "Laser off",
-                             highlighted: model.mode == .aim) {
-                    model.mode = model.mode == .aim ? .touchpad : .aim
-                }
-                RemoteButton(symbol: "scope", label: "Recenter") { model.recenter() }
-                    .disabled(model.mode != .aim)
-                    .opacity(model.mode == .aim ? 1 : 0.35)
-                // The TV decides: click under the pointer if it's showing, else the remote's OK.
-                RemoteButton(symbol: "circle.circle.fill", label: "OK", prominent: true, height: 76) { model.link.action(.center) }
-                    .frame(minWidth: 160)
+                laserButton
+                recenterButton
+                okButton.frame(minWidth: 160)
             }
+        }
+        .animation(.easeInOut(duration: 0.2), value: link.mediaActive)
+    }
+
+    /// Regular phone (and the Duo folded): one column, buttons in the thumb zone.
+    private var tallLayout: some View {
+        VStack(spacing: 14) {
+            header
+            speedSlider
+            remoteBanner
+            pad
+            controls
+        }
+    }
+
+    /// Unfolded Duo: left thumb drives the pointer, right thumb gets every button.
+    private var wideLayout: some View {
+        HStack(alignment: .top, spacing: 18) {
+            // Left thumb: the pointer gets the full height.
+            VStack(spacing: 12) {
+                speedSlider
+                pad
+            }
+            .frame(maxWidth: .infinity)
+            // Right column: TV picker and status up top (rarely touched), buttons at the bottom.
+            VStack(spacing: 10) {
+                header
+                remoteBanner
+                sideControls
+            }
+            .frame(width: 260)
+        }
+    }
+
+    private var laserButton: some View {
+        RemoteButton(symbol: model.mode == .aim ? "light.beacon.max.fill" : "light.beacon.max",
+                     label: model.mode == .aim ? "Laser on" : "Laser off",
+                     highlighted: model.mode == .aim) {
+            model.mode = model.mode == .aim ? .touchpad : .aim
+        }
+    }
+
+    private var recenterButton: some View {
+        RemoteButton(symbol: "scope", label: "Recenter") { model.recenter() }
+            .disabled(model.mode != .aim)
+            .opacity(model.mode == .aim ? 1 : 0.35)
+    }
+
+    private var typeButton: some View {
+        RemoteButton(symbol: "keyboard", label: "Type") { showKeyboard = true }
+            .disabled(!remote.isReady)
+            .opacity(remote.isReady ? 1 : 0.35)
+    }
+
+    private var okButton: some View {
+        // The TV decides: click under the pointer if it's showing, else the remote's OK.
+        RemoteButton(symbol: "circle.circle.fill", label: "OK", prominent: true, height: 76) { model.link.action(.center) }
+    }
+
+    private var mediaRow: some View {
+        HStack(spacing: 8) {
+            RemoteButton(symbol: "gobackward", label: "Rewind") { model.press(.rewind) }
+            RemoteButton(symbol: "playpause.fill", label: "Play/Pause", highlighted: true) { model.press(.playPause) }
+            RemoteButton(symbol: "goforward", label: "Forward") { model.press(.fastForward) }
+        }
+        .transition(.move(edge: .top).combined(with: .opacity))
+    }
+
+    /// Right-hand column for the wide layout: buttons fill the height, OK is biggest and lowest.
+    private var sideControls: some View {
+        VStack(spacing: 10) {
+            if link.mediaActive { mediaRow }
+            Spacer(minLength: 0)
+            HStack(spacing: 10) {
+                RemoteButton(symbol: "chevron.backward", label: "Back", height: 78) { model.press(.back) }
+                RemoteButton(symbol: "house", label: "Home", height: 78) { model.press(.home) }
+            }
+            HStack(spacing: 10) {
+                typeButton
+                laserButton
+            }
+            recenterButton
+            RemoteButton(symbol: "circle.circle.fill", label: "OK", prominent: true, height: 150) { model.link.action(.center) }
         }
         .animation(.easeInOut(duration: 0.2), value: link.mediaActive)
     }
