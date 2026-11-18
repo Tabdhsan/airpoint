@@ -17,7 +17,12 @@ final class AppModel: ObservableObject {
     let link = TVLink()
     let motion = MotionPointer()
     let remote = TVRemote()
+    let fx = SkinFX()
     private var subscriptions = Set<AnyCancellable>()
+
+    @Published var theme: ThemeID {
+        didSet { UserDefaults.standard.set(theme.rawValue, forKey: "theme") }
+    }
 
     @Published var mode: PointerMode {
         didSet { UserDefaults.standard.set(mode.rawValue, forKey: "pointerMode"); applyMode() }
@@ -28,6 +33,7 @@ final class AppModel: ObservableObject {
 
     init() {
         mode = PointerMode(rawValue: UserDefaults.standard.string(forKey: "pointerMode") ?? "") ?? .aim
+        theme = ThemeID(rawValue: UserDefaults.standard.string(forKey: "theme") ?? "") ?? .toy
         let s = UserDefaults.standard.double(forKey: "sensitivity")
         sensitivity = s == 0 ? 1.0 : s
         motion.sensitivity = sensitivity
@@ -46,6 +52,9 @@ final class AppModel: ObservableObject {
             .sink { [link] state in link.remoteReady = state == .ready }
             .store(in: &subscriptions)
         link.onKeyRequest = { [remote] key in remote.sendKey(key) }
+        link.$connected.removeDuplicates()
+            .sink { [fx] on in fx.emit(.connected(on)) }
+            .store(in: &subscriptions)
     }
 
     /// Real remote key when paired (works in every app), accessibility action otherwise.
@@ -93,11 +102,14 @@ final class AppModel: ObservableObject {
             motion.frozen = true
             stepAccumulator = .zero
             haptic.prepare()
+            fx.emit(.padDown)
         case .ended:
+            fx.emit(.padUp)
             // Brief hold-off so lifting the thumb doesn't jolt the pointer.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { [weak self] in self?.motion.frozen = false }
         case .move(let dx, let dy):
             // Trackpad acceleration: slow strokes are precise, quick flicks cross the screen.
+            fx.emit(.move(dx: dx, dy: dy))
             let speed = hypot(dx, dy)
             let gain = (2.7 + min(speed / 12, 1) * 4.4) * sensitivity
             if mode == .aim {
@@ -110,12 +122,15 @@ final class AppModel: ObservableObject {
             step(dx, dy)
         case .tap:
             haptic.impactOccurred()
+            fx.emit(.click)
             link.tap()
         case .longPress:
             haptic.impactOccurred(intensity: 1)
+            fx.emit(.longPress)
             link.longPress()
         case .twoFingerTap:
             haptic.impactOccurred()
+            fx.emit(.button(id: "back"))
             press(.back)
         }
     }
@@ -133,8 +148,10 @@ final class AppModel: ObservableObject {
             step(vertical ? 0 : dx, vertical ? dy : 0)
         case .tap, .longPress:
             haptic.impactOccurred()
+            fx.emit(.click)
             press(.center)
         case .twoFingerTap:
+            fx.emit(.button(id: "back"))
             press(.back)
         case .ended: break
         }
@@ -145,14 +162,24 @@ final class AppModel: ObservableObject {
         stepAccumulator.width += dx
         stepAccumulator.height += dy
         if abs(stepAccumulator.width) >= distance && abs(stepAccumulator.width) > abs(stepAccumulator.height) {
+            fx.emit(.step(dx: stepAccumulator.width > 0 ? 1 : -1, dy: 0))
             press(stepAccumulator.width > 0 ? .right : .left)
             stepAccumulator = .zero
             haptic.impactOccurred()
         } else if abs(stepAccumulator.height) >= distance {
+            fx.emit(.step(dx: 0, dy: stepAccumulator.height > 0 ? 1 : -1))
             press(stepAccumulator.height > 0 ? .down : .up)
             stepAccumulator = .zero
             haptic.impactOccurred()
         }
+    }
+}
+
+private struct SkinKey: EnvironmentKey { static let defaultValue: any RemoteSkin = PlainSkin() }
+extension EnvironmentValues {
+    var skin: any RemoteSkin {
+        get { self[SkinKey.self] }
+        set { self[SkinKey.self] = newValue }
     }
 }
 
@@ -164,6 +191,9 @@ struct ContentView: View {
     @State private var showKeyboard = false
     @State private var showSettings = false
     @State private var code = ""
+    @State private var padState = PadState()
+    @State private var vStrip = StripState()
+    @State private var hStrip = StripState()
 
     init() {
         let model = AppModel()
@@ -172,24 +202,37 @@ struct ContentView: View {
         _remote = ObservedObject(wrappedValue: model.remote)
     }
 
+    private var skin: any RemoteSkin { model.theme.skin }
+
     var body: some View {
-        GeometryReader { geo in
-            // Unfolded iPhone Duo (626x890 pt, usually held sideways) or any landscape screen:
-            // two-handed layout. The folded Duo (narrow cover screen) and regular phones get one column.
-            if geo.size.width > 560 || geo.size.width / max(geo.size.height, 1) > 0.62 {
-                wideLayout
-            } else {
-                tallLayout
+        ZStack {
+            skin.backdrop().ignoresSafeArea()
+            GeometryReader { geo in
+                // Unfolded iPhone Duo (626x890 pt, usually held sideways) or any landscape screen:
+                // two-handed layout. The folded Duo (narrow cover screen) and regular phones get one column.
+                if geo.size.width > 560 || geo.size.width / max(geo.size.height, 1) > 0.62 {
+                    wideLayout
+                } else {
+                    tallLayout
+                }
             }
+            .padding()
+            skin.effects()
+                .allowsHitTesting(false)
+                .ignoresSafeArea()
         }
-        .padding()
+        .id(model.theme)   // fresh skin state (easter eggs, animations) when switching themes
+        .environment(\.skin, skin)
+        .environmentObject(model.fx)
+        .tint(skin.tint)
+        .preferredColorScheme(skin.colorScheme)
         .onAppear {
             UIApplication.shared.isIdleTimerDisabled = true
             model.start()
         }
         .sheet(isPresented: $showSettings) {
             SettingsSheet(model: model, remote: remote)
-                .presentationDetents([.height(160)])
+                .presentationDetents([.medium])
         }
         .sheet(isPresented: $showKeyboard) {
             KeyboardSheet(remote: remote)
@@ -214,37 +257,73 @@ struct ContentView: View {
         }
     }
 
+    // MARK: Pad and strips
+
     private var pad: some View {
         VStack(spacing: 8) {
             HStack(spacing: 8) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .fill(Color(.secondarySystemBackground))
-                    VStack(spacing: 6) {
-                        Image(systemName: "hand.point.up.left").font(.system(size: 34))
-                        Text("Drag to move · tap to click · hold for long press\nTwo-finger tap for Back")
-                            .font(.footnote)
-                            .multilineTextAlignment(.center)
+                GeometryReader { geo in
+                    ZStack {
+                        skin.pad(padState)
+                        Trackpad(onEvent: { event in
+                            trackPadState(event)
+                            model.pad(event)
+                        }, onLocation: { point in
+                            padState.location = point
+                        })
                     }
-                    .foregroundStyle(.secondary)
-                    .padding()
-                    .allowsHitTesting(false)
-                    Trackpad { model.pad($0) }
+                    .onAppear { padState.size = geo.size }
+                    .onChange(of: geo.size) { _, size in padState.size = size }
                 }
-                ScrollStrip(symbol: "arrow.up.and.down", vertical: true) { model.strip($0, vertical: true) }
+                strip(vertical: true)
                     .frame(width: 58)
             }
-            ScrollStrip(symbol: "arrow.left.and.right", vertical: false) { model.strip($0, vertical: false) }
+            strip(vertical: false)
                 .frame(height: 58)
                 .padding(.trailing, 66)
         }
     }
 
+    private func trackPadState(_ event: TrackpadView.Event) {
+        switch event {
+        case .began:
+            padState.touching = true
+            padState.holdProgress = 0
+            withAnimation(.linear(duration: 0.55)) { padState.holdProgress = 1 }
+        case .move, .scroll:
+            if padState.holdProgress != 0 {
+                var t = Transaction(); t.disablesAnimations = true
+                withTransaction(t) { padState.holdProgress = 0 }
+            }
+        case .ended:
+            padState.touching = false
+            var t = Transaction(); t.disablesAnimations = true
+            withTransaction(t) { padState.holdProgress = 0 }
+        default: break
+        }
+    }
+
+    private func strip(vertical: Bool) -> some View {
+        ZStack {
+            skin.strip(vertical: vertical, vertical ? vStrip : hStrip)
+            Trackpad { event in
+                switch event {
+                case .began: if vertical { vStrip.touching = true } else { hStrip.touching = true }
+                case .ended: if vertical { vStrip.touching = false } else { hStrip.touching = false }
+                case .move(let dx, let dy), .scroll(let dx, let dy):
+                    if vertical { vStrip.travel += dy } else { hStrip.travel += dx }
+                default: break
+                }
+                model.strip(event, vertical: vertical)
+            }
+        }
+    }
+
+    // MARK: Header
+
     private var header: some View {
-        HStack {
-            Circle()
-                .fill(link.connected ? Color.green : Color.orange)
-                .frame(width: 10, height: 10)
+        HStack(spacing: 10) {
+            skin.statusDot(connected: link.connected)
             VStack(alignment: .leading, spacing: 2) {
                 Menu {
                     if link.tvs.isEmpty {
@@ -263,24 +342,34 @@ struct ContentView: View {
                     }
                 } label: {
                     HStack(spacing: 4) {
-                        Text(selectedDisplayName).font(.headline)
+                        Text(selectedDisplayName).font(skin.titleFont).lineLimit(1).minimumScaleFactor(0.7)
                         Image(systemName: "chevron.up.chevron.down").font(.caption)
                     }
+                    .foregroundStyle(skin.ink)
                 }
-                Text(link.status).font(.caption).foregroundStyle(.secondary)
+                skin.subtitle(status: link.status)
+                    .lineLimit(1)
             }
-            Spacer()
+            Spacer(minLength: 4)
             Button {
+                Haptics.tap(.light)
+                model.fx.emit(.button(id: "gear"))
                 showSettings = true
-            } label: {
-                Image(systemName: "gearshape")
-                    .font(.title3)
-                    .padding(10)
-                    .background(Color(.secondarySystemBackground), in: Circle())
-            }
-            .buttonStyle(.plain)
+            } label: { EmptyView() }
+            .buttonStyle(GearStyle(skin: skin))
             .accessibilityLabel("Settings")
         }
+        .padding(.horizontal, 4)
+        .padding(.vertical, 6)
+        .background(skin.headerPanel())
+    }
+
+    // MARK: Buttons
+
+    private func button(_ id: String, _ symbol: String, _ label: String, role: SkinButtonRole = .normal,
+                        height: CGFloat = 64, enabled: Bool = true, action: @escaping () -> Void) -> some View {
+        ThemedButton(spec: SkinButton(id: id, symbol: symbol, label: label, role: role, enabled: enabled, height: height),
+                     action: action)
     }
 
     /// Thumb-zone controls: the most used button (OK) is biggest and lowest.
@@ -289,14 +378,14 @@ struct ContentView: View {
         VStack(spacing: 8) {
             if link.mediaActive { mediaRow }
             HStack(spacing: 8) {
-                RemoteButton(symbol: "chevron.backward", label: "Back") { model.press(.back) }
-                RemoteButton(symbol: "house", label: "Home") { model.press(.home) }
-                typeButton
+                button("back", "chevron.backward", "Back") { model.press(.back) }
+                button("home", "house", "Home") { model.press(.home) }
+                typeButton()
             }
             HStack(spacing: 8) {
-                laserButton
-                recenterButton
-                okButton.frame(minWidth: 160)
+                laserButton()
+                recenterButton()
+                okButton(height: 76).frame(minWidth: 160)
             }
         }
         .animation(.easeInOut(duration: 0.2), value: link.mediaActive)
@@ -306,7 +395,7 @@ struct ContentView: View {
     private var tallLayout: some View {
         VStack(spacing: 14) {
             header
-            speedSlider
+            speedControl
             remoteBanner
             pad
             controls
@@ -318,7 +407,7 @@ struct ContentView: View {
         HStack(alignment: .top, spacing: 18) {
             // Left thumb: the pointer gets the full height.
             VStack(spacing: 12) {
-                speedSlider
+                speedControl
                 pad
             }
             .frame(maxWidth: .infinity)
@@ -332,36 +421,34 @@ struct ContentView: View {
         }
     }
 
-    private var laserButton: some View {
-        RemoteButton(symbol: model.mode == .aim ? "light.beacon.max.fill" : "light.beacon.max",
-                     label: model.mode == .aim ? "Laser on" : "Laser off",
-                     highlighted: model.mode == .aim) {
+    private func laserButton(height: CGFloat = 64) -> some View {
+        button("laser", model.mode == .aim ? "light.beacon.max.fill" : "light.beacon.max",
+               model.mode == .aim ? "Laser on" : "Laser off", role: .toggle(on: model.mode == .aim), height: height) {
             model.mode = model.mode == .aim ? .touchpad : .aim
         }
     }
 
-    private var recenterButton: some View {
-        RemoteButton(symbol: "scope", label: "Recenter") { model.recenter() }
-            .disabled(model.mode != .aim)
-            .opacity(model.mode == .aim ? 1 : 0.35)
+    private func recenterButton(height: CGFloat = 64) -> some View {
+        button("recenter", "scope", "Recenter", height: height, enabled: model.mode == .aim) { model.recenter() }
     }
 
-    private var typeButton: some View {
-        RemoteButton(symbol: "keyboard", label: "Type") { showKeyboard = true }
-            .disabled(!remote.isReady)
-            .opacity(remote.isReady ? 1 : 0.35)
+    private func typeButton(height: CGFloat = 64) -> some View {
+        button("type", "keyboard", "Type", height: height, enabled: remote.isReady) { showKeyboard = true }
     }
 
-    private var okButton: some View {
+    private func okButton(height: CGFloat) -> some View {
         // The TV decides: click under the pointer if it's showing, else the remote's OK.
-        RemoteButton(symbol: "circle.circle.fill", label: "OK", prominent: true, height: 76) { model.link.action(.center) }
+        button("ok", "circle.circle.fill", "OK", role: .ok, height: height) {
+            model.fx.emit(.click)
+            model.link.action(.center)
+        }
     }
 
     private var mediaRow: some View {
         HStack(spacing: 8) {
-            RemoteButton(symbol: "gobackward", label: "Rewind") { model.press(.rewind) }
-            RemoteButton(symbol: "playpause.fill", label: "Play/Pause", highlighted: true) { model.press(.playPause) }
-            RemoteButton(symbol: "goforward", label: "Forward") { model.press(.fastForward) }
+            button("rewind", "gobackward", "Rewind", role: .media) { model.press(.rewind) }
+            button("playpause", "playpause.fill", "Play/Pause", role: .media) { model.press(.playPause) }
+            button("forward", "goforward", "Forward", role: .media) { model.press(.fastForward) }
         }
         .transition(.move(edge: .top).combined(with: .opacity))
     }
@@ -372,26 +459,21 @@ struct ContentView: View {
             if link.mediaActive { mediaRow }
             Spacer(minLength: 0)
             HStack(spacing: 10) {
-                RemoteButton(symbol: "chevron.backward", label: "Back", height: 78) { model.press(.back) }
-                RemoteButton(symbol: "house", label: "Home", height: 78) { model.press(.home) }
+                button("back", "chevron.backward", "Back", height: 78) { model.press(.back) }
+                button("home", "house", "Home", height: 78) { model.press(.home) }
             }
             HStack(spacing: 10) {
-                typeButton
-                laserButton
+                typeButton()
+                laserButton()
             }
-            recenterButton
-            RemoteButton(symbol: "circle.circle.fill", label: "OK", prominent: true, height: 150) { model.link.action(.center) }
+            recenterButton()
+            okButton(height: 150)
         }
         .animation(.easeInOut(duration: 0.2), value: link.mediaActive)
     }
 
-    private var speedSlider: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "tortoise").foregroundStyle(.secondary)
-            Slider(value: $model.sensitivity, in: 0.4...2.5)
-            Image(systemName: "hare").foregroundStyle(.secondary)
-        }
-        .font(.footnote)
+    private var speedControl: some View {
+        skin.speedControl(value: $model.sensitivity, range: 0.4...2.5)
     }
 
     @ViewBuilder private var remoteBanner: some View {
@@ -402,14 +484,15 @@ struct ContentView: View {
             } label: {
                 Label("Pair with this TV for OK and typing", systemImage: "link")
                     .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(skin.ink)
                     .frame(maxWidth: .infinity)
                     .padding(10)
-                    .background(Color.accentColor.opacity(0.15), in: RoundedRectangle(cornerRadius: 12))
+                    .background(skin.tint.opacity(0.18), in: RoundedRectangle(cornerRadius: 12))
             }
             .buttonStyle(.plain)
         case .failed(let message):
             HStack {
-                Text(message).font(.footnote).foregroundStyle(.secondary)
+                Text(message).font(.footnote).foregroundStyle(skin.inkSecondary)
                 Spacer()
                 Button("Pair again") { model.remote.startPairing() }.font(.footnote.weight(.semibold))
             }
@@ -423,23 +506,29 @@ struct ContentView: View {
     }
 }
 
-/// Narrow pad that steps the D-pad as you drag along it; tap selects.
-struct ScrollStrip: View {
-    let symbol: String
-    let vertical: Bool
-    let onEvent: (TrackpadView.Event) -> Void
+/// A remote button whose face comes from the current skin.
+struct ThemedButton: View {
+    let spec: SkinButton
+    let action: () -> Void
+    @Environment(\.skin) private var skin
+    @EnvironmentObject private var fx: SkinFX
 
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color(.tertiarySystemBackground))
-                .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color(.separator)))
-            Image(systemName: symbol)
-                .font(.title3)
-                .foregroundStyle(.secondary)
-                .allowsHitTesting(false)
-            Trackpad(onEvent: onEvent)
-        }
+        Button {
+            Haptics.tap(spec.role == .ok ? .rigid : .medium)
+            fx.emit(.button(id: spec.id))
+            action()
+        } label: { EmptyView() }
+        .buttonStyle(SkinButtonStyle(skin: skin, spec: spec))
+        .disabled(!spec.enabled)
+        .accessibilityLabel(spec.label)
+    }
+}
+
+struct GearStyle: ButtonStyle {
+    let skin: any RemoteSkin
+    func makeBody(configuration: Configuration) -> some View {
+        skin.gear(pressed: configuration.isPressed).contentShape(Rectangle())
     }
 }
 
@@ -449,12 +538,36 @@ struct SettingsSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
+            Text("Theme").font(.headline)
+            VStack(spacing: 8) {
+                ForEach(ThemeID.allCases) { theme in
+                    Button {
+                        Haptics.tick()
+                        withAnimation(.easeInOut(duration: 0.25)) { model.theme = theme }
+                    } label: {
+                        HStack(alignment: .firstTextBaseline, spacing: 12) {
+                            Image(systemName: model.theme == theme ? "checkmark.circle.fill" : "circle")
+                                .foregroundStyle(model.theme == theme ? Color.accentColor : Color.secondary)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(theme.title).font(.body.weight(.semibold))
+                                Text(theme.blurb).font(.footnote).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                        }
+                        .padding(12)
+                        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
             Text("Remote control").font(.headline)
             HStack {
                 Text(remoteStatus).font(.subheadline).foregroundStyle(.secondary)
                 Spacer()
                 Button("Pair again") { model.remote.startPairing() }
             }
+            Spacer(minLength: 0)
         }
         .padding(24)
     }
@@ -524,32 +637,5 @@ struct KeyboardSheet: View {
         }
         .padding()
         .onAppear { focused = true }
-    }
-}
-
-struct RemoteButton: View {
-    let symbol: String
-    let label: String
-    var prominent = false
-    var highlighted = false
-    var height: CGFloat = 64
-    let action: () -> Void
-
-    var body: some View {
-        Button {
-            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            action()
-        } label: {
-            VStack(spacing: 4) {
-                Image(systemName: symbol).font(prominent ? .largeTitle : .title2)
-                Text(label).font(prominent ? .caption.weight(.semibold) : .caption2)
-            }
-            .frame(maxWidth: .infinity, minHeight: height)
-            .foregroundStyle(prominent ? Color.white : (highlighted ? Color.accentColor : Color.primary))
-            .background(prominent ? Color.accentColor : (highlighted ? Color.accentColor.opacity(0.18) : Color(.secondarySystemBackground)),
-                        in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
     }
 }

@@ -28,6 +28,15 @@
 	<string>Find Google TV devices running AirPoint and send them pointer movement.</string>
 	<key>NSMotionUsageDescription</key>
 	<string>Turn the phone's movement into a pointer on your TV.</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Rubik-Variable.ttf</string>
+		<string>VT323-Regular.ttf</string>
+		<string>BowlbyOne-Regular.ttf</string>
+		<string>PermanentMarker-Regular.ttf</string>
+		<string>SpaceMono-Regular.ttf</string>
+		<string>SpaceMono-Bold.ttf</string>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UIRequiresFullScreen</key>

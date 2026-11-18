@@ -13,6 +13,8 @@ final class TrackpadView: UIView {
     }
 
     var onEvent: ((Event) -> Void)?
+    /// Finger (centroid) position while touching, nil when lifted. For skins only.
+    var onLocation: ((CGPoint?) -> Void)?
 
     private var active = Set<UITouch>()
     private var maxFingers = 0
@@ -44,6 +46,7 @@ final class TrackpadView: UIView {
         active.formUnion(touches)
         maxFingers = max(maxFingers, active.count)
         lastCentroid = centroid()
+        onLocation?(lastCentroid)
         if wasEmpty {
             maxFingers = active.count
             startTime = Date()
@@ -65,6 +68,7 @@ final class TrackpadView: UIView {
         let c = centroid()
         let dx = c.x - lastCentroid.x, dy = c.y - lastCentroid.y
         lastCentroid = c
+        onLocation?(c)
         travel += hypot(dx, dy)
         guard travel >= moveThreshold, !longPressFired else { return }
         longPressWork?.cancel()
@@ -82,6 +86,7 @@ final class TrackpadView: UIView {
         active.subtract(touches)
         lastCentroid = centroid()
         guard active.isEmpty else { return }
+        onLocation?(nil)
         longPressWork?.cancel()
         let quick = Date().timeIntervalSince(startTime) < 0.35
         if !longPressFired, travel < moveThreshold, quick {
@@ -93,12 +98,17 @@ final class TrackpadView: UIView {
 
 struct Trackpad: UIViewRepresentable {
     let onEvent: (TrackpadView.Event) -> Void
+    var onLocation: ((CGPoint?) -> Void)? = nil
 
     func makeUIView(context: Context) -> TrackpadView {
         let view = TrackpadView()
         view.onEvent = onEvent
+        view.onLocation = onLocation
         return view
     }
 
-    func updateUIView(_ view: TrackpadView, context: Context) { view.onEvent = onEvent }
+    func updateUIView(_ view: TrackpadView, context: Context) {
+        view.onEvent = onEvent
+        view.onLocation = onLocation
+    }
 }

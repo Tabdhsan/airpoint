@@ -17,6 +17,8 @@ targets:
       - Sources
       - path: Identity/identity.p12
         buildPhase: resources
+      - path: Fonts
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.bitbyteco.AirPoint
@@ -33,5 +35,6 @@ targets:
         NSBonjourServices: ["_airpoint._udp"]
         NSMotionUsageDescription: Turn the phone's movement into a pointer on your TV.
         UILaunchScreen: {}
+        UIAppFonts: [Rubik-Variable.ttf, VT323-Regular.ttf, BowlbyOne-Regular.ttf, PermanentMarker-Regular.ttf, SpaceMono-Regular.ttf, SpaceMono-Bold.ttf]
         UIRequiresFullScreen: true
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
