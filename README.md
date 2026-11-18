@@ -35,6 +35,8 @@ driving display glasses. It needs no root and works with stock Google TV.
   Backspace and **Delete** remove characters; **Done** presses Enter.
 - **Back / Home**, and **Rewind / Play-Pause / Forward** while something is playing.
 - **Several TVs**: every TV running the TV app shows up in the menu at the top of the phone app.
+- **Wide screens**: on an unfolded iPhone Duo or in landscape, the pad takes the left side for the
+  left thumb and every button moves to a right-hand column, with OK largest and lowest.
 
 Tested with a RayNeo Pocket TV Pro (Google TV, Android 14, Amlogic S905X5M) and an iPhone running
 iOS 27. Other Google TV and Android TV 13+ devices should work; the TV app needs API 33.
