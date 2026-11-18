@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AirPoint</string>
+    <string name="service_description">Shows a pointer controlled by the AirPoint iPhone app and turns its taps and swipes into touches. Anyone on your local network running AirPoint can control this device while the service is on.</string>
+</resources>

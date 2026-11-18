@@ -1,0 +1,8 @@
+__pycache__/
+.DS_Store
+android/build/
+ios/*.xcodeproj/
+ios/build-sim/
+ios/build/
+ios/Identity/
+ios/Local.xcconfig
