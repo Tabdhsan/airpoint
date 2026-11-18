@@ -1,0 +1,1193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AirPoint Laser Cat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400..700&family=DM+Sans:opsz,wght@9..40,400..700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --display:"Fredoka", ui-rounded, "SF Pro Rounded", system-ui, sans-serif;
+  --body:"DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --bg:#F4EEFF; --bg-2:#E9DEFF;
+  --ink:#2A1A3E; --ink-2:#6B5A84; --ink-3:#9C8DB2;
+  --phone-frame:#211735; --screen:#FCF8FF; --surface:#FFFFFF;
+  --pad:#EFE6FF; --pad-dot:rgba(106,74,160,.20); --pad-edge:#DCCBFA;
+  --jelly:#FFFFFF; --jelly-top:#FFFFFF; --jelly-shadow:#D8C8F3; --jelly-ink:#2A1A3E; --gloss:rgba(255,255,255,.9);
+  --ok:#7B4DFF; --ok-top:#9C78FF; --ok-shadow:#4D22C6;
+  --laser:#FF2E58; --laser-top:#FF6A88; --laser-shadow:#C20F3A; --laser-glow:rgba(255,46,88,.42);
+  --yarn-a:#FF86A6; --yarn-b:#FF4F7E;
+  --cat:#F39A45; --cat-dark:#D2701F; --cat-cream:#FFEBD3; --cat-ink:#2A1A3E; --cat-pink:#FF8FA8;
+  --stripe:rgba(123,77,255,.17);
+  --good:#1FBF74; --warn:#F5A524;
+  --focus:#7B4DFF;
+  --scrim:rgba(30,14,60,.32);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#130D1F; --bg-2:#1D1430;
+    --ink:#F3EBFF; --ink-2:#B9A9D3; --ink-3:#7F6F99;
+    --phone-frame:#07050C; --screen:#1A1229; --surface:#271C3D;
+    --pad:#221939; --pad-dot:rgba(200,170,255,.13); --pad-edge:#34284F;
+    --jelly:#2D2245; --jelly-top:#3A2D58; --jelly-shadow:#0F0A1A; --jelly-ink:#F3EBFF; --gloss:rgba(255,255,255,.16);
+    --ok:#8B63FF; --ok-top:#A687FF; --ok-shadow:#3A189F;
+    --laser:#FF4469; --laser-top:#FF7792; --laser-shadow:#9E0C30; --laser-glow:rgba(255,68,105,.5);
+    --cat:#F2A253; --cat-dark:#C46E26; --cat-cream:#FFE3C2; --cat-ink:#1A1028; --cat-pink:#FF93AB;
+    --stripe:rgba(185,160,255,.15);
+    --focus:#B9A2FF; --scrim:rgba(0,0,0,.5);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#130D1F; --bg-2:#1D1430;
+  --ink:#F3EBFF; --ink-2:#B9A9D3; --ink-3:#7F6F99;
+  --phone-frame:#07050C; --screen:#1A1229; --surface:#271C3D;
+  --pad:#221939; --pad-dot:rgba(200,170,255,.13); --pad-edge:#34284F;
+  --jelly:#2D2245; --jelly-top:#3A2D58; --jelly-shadow:#0F0A1A; --jelly-ink:#F3EBFF; --gloss:rgba(255,255,255,.16);
+  --ok:#8B63FF; --ok-top:#A687FF; --ok-shadow:#3A189F;
+  --laser:#FF4469; --laser-top:#FF7792; --laser-shadow:#9E0C30; --laser-glow:rgba(255,68,105,.5);
+  --cat:#F2A253; --cat-dark:#C46E26; --cat-cream:#FFE3C2; --cat-ink:#1A1028; --cat-pink:#FF93AB;
+  --stripe:rgba(185,160,255,.15);
+  --focus:#B9A2FF; --scrim:rgba(0,0,0,.5);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+
+/* ---------- page ---------- */
+.page{max-width:1240px;margin:0 auto;padding:28px 16px 64px}
+.intro h1{font-family:var(--display);font-weight:600;font-size:clamp(30px,5vw,46px);line-height:1;margin:0 0 10px;letter-spacing:-.01em}
+.intro h1 .dot{display:inline-block;width:.32em;height:.32em;border-radius:50%;background:var(--laser);box-shadow:0 0 0 .1em var(--laser-glow);vertical-align:.12em;margin-left:.08em}
+.intro p{margin:0;max-width:62ch;color:var(--ink-2);font-size:16px;line-height:1.5}
+.controls{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:center;margin:22px 0 26px}
+.seg{display:inline-flex;background:var(--bg-2);border-radius:99px;padding:4px;gap:2px}
+.seg button{border:0;background:transparent;padding:8px 14px;border-radius:99px;font-weight:600;font-size:14px;color:var(--ink-2);cursor:pointer}
+.seg button[aria-checked="true"]{background:var(--surface);color:var(--ink);box-shadow:0 2px 0 var(--jelly-shadow)}
+.sw{display:inline-flex;align-items:center;gap:10px;border:0;background:transparent;padding:4px 0;cursor:pointer;font-weight:600;font-size:14px;color:var(--ink)}
+.sw .track{width:44px;height:26px;border-radius:99px;background:var(--bg-2);box-shadow:inset 0 0 0 1.5px var(--pad-edge);position:relative;transition:background .25s;flex:none}
+.sw .track::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:var(--surface);box-shadow:0 2px 0 var(--jelly-shadow);transition:transform .4s cubic-bezier(.3,1.8,.5,1)}
+.sw[aria-checked="true"] .track{background:var(--laser)}
+.sw[aria-checked="true"] .track::after{transform:translateX(18px)}
+
+.demo{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start;justify-content:center}
+.phonecol{flex:0 1 414px;min-width:0}
+.demo.duo .phonecol{flex:1 1 100%;max-width:914px}
+.tvcol{flex:1 1 340px;max-width:560px;min-width:0;position:sticky;top:10px;z-index:30;align-self:flex-start;background:var(--bg);padding-bottom:6px}
+.demo.duo .tvcol{order:-1;flex-basis:100%;max-width:400px;position:relative;top:0}
+@media (max-width:880px){.tvcol{order:-1;flex-basis:100%}}
+#stageWrap{width:100%;display:flex;justify-content:center}
+.stage{position:relative}
+.hint{font-size:13px;color:var(--ink-2);margin:10px 2px 0;line-height:1.45}
+.hint kbd{font-family:var(--body);font-size:12px;background:var(--bg-2);border-radius:6px;padding:1px 6px}
+
+/* ---------- phone ---------- */
+.phone{position:absolute;left:0;top:0;transform-origin:0 0;width:414px;height:868px;border-radius:62px;background:var(--phone-frame);padding:12px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.08),0 40px 70px -30px rgba(50,20,100,.55)}
+.phone.wide{width:914px;height:650px;border-radius:46px}
+.glass{position:relative;width:100%;height:100%;border-radius:50px;overflow:hidden;background:var(--screen)}
+.phone.wide .glass{border-radius:34px}
+.statusbar{position:absolute;left:0;right:0;top:0;height:50px;display:flex;align-items:center;justify-content:space-between;padding:4px 30px 0 40px;font:600 16px var(--body);color:var(--ink);pointer-events:none;z-index:4}
+.statusbar svg{height:13px}
+.island{position:absolute;top:11px;left:50%;width:124px;height:36px;margin-left:-62px;border-radius:20px;background:#000;z-index:5}
+.phone.wide .statusbar{height:26px;padding:2px 22px 0 26px;font-size:13px}
+.phone.wide .island{width:10px;height:10px;top:8px;margin-left:-5px;border-radius:50%}
+.crease{display:none;position:absolute;top:0;bottom:0;left:50%;width:14px;margin-left:-7px;background:linear-gradient(90deg,transparent,rgba(0,0,0,.035) 45%,rgba(255,255,255,.05) 55%,transparent);pointer-events:none;z-index:3}
+.phone.wide .crease{display:block}
+.homebar{position:absolute;bottom:8px;left:50%;width:134px;height:5px;margin-left:-67px;border-radius:9px;background:var(--ink);opacity:.85;z-index:4}
+.phone.wide .homebar{bottom:6px}
+
+.screen{position:absolute;inset:0;display:grid;padding:54px 16px 30px;gap:12px;
+  grid-template-columns:repeat(12,minmax(0,1fr));
+  grid-template-rows:52px 40px minmax(0,1fr) 60px 84px;
+  grid-template-areas:
+   "hdr hdr hdr hdr hdr hdr hdr hdr hdr hdr hdr hdr"
+   "sld sld sld sld sld sld sld sld sld sld sld sld"
+   "pad pad pad pad pad pad pad pad pad pad pad pad"
+   "back back back back home home home home type type type type"
+   "laser laser laser laser rec rec rec ok ok ok ok ok";}
+.screen.playing{grid-template-rows:52px 40px minmax(0,1fr) 54px 60px 84px;
+  grid-template-areas:
+   "hdr hdr hdr hdr hdr hdr hdr hdr hdr hdr hdr hdr"
+   "sld sld sld sld sld sld sld sld sld sld sld sld"
+   "pad pad pad pad pad pad pad pad pad pad pad pad"
+   "med med med med med med med med med med med med"
+   "back back back back home home home home type type type type"
+   "laser laser laser laser rec rec rec ok ok ok ok ok";}
+.phone.wide .screen{padding:30px 22px 24px;gap:10px;grid-template-columns:minmax(0,1fr) 125px 125px;
+  grid-template-rows:52px 58px 58px 54px minmax(0,1fr);
+  grid-template-areas:"sld hdr hdr" "pad back home" "pad type laser" "pad rec rec" "pad ok ok";}
+.phone.wide .screen.playing{grid-template-rows:52px 50px 58px 58px 54px minmax(0,1fr);
+  grid-template-areas:"sld hdr hdr" "pad med med" "pad back home" "pad type laser" "pad rec rec" "pad ok ok";}
+.phone.wide .sld,.phone.wide .padzone{margin-right:10px}
+
+/* header */
+.hdr{grid-area:hdr;position:relative;display:flex;align-items:center;gap:10px;min-width:0}
+.status-dot{width:11px;height:11px;border-radius:50%;background:var(--good);box-shadow:0 0 0 4px color-mix(in srgb,var(--good) 22%,transparent);flex:none;animation:breathe-dot 2.8s ease-in-out infinite}
+.status-dot.scan{background:var(--warn);box-shadow:0 0 0 4px color-mix(in srgb,var(--warn) 25%,transparent)}
+@keyframes breathe-dot{50%{box-shadow:0 0 0 7px color-mix(in srgb,var(--good) 8%,transparent)}}
+.hdr-text{flex:1;min-width:0}
+.tvname{display:inline-flex;align-items:center;gap:4px;border:0;background:transparent;padding:2px 6px 2px 0;margin:0;cursor:pointer;font:600 21px/1.1 var(--display);color:var(--ink);border-radius:10px;max-width:100%}
+.tvname span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tvname svg{width:18px;height:18px;flex:none;transition:transform .35s cubic-bezier(.3,1.8,.5,1)}
+.tvname[aria-expanded="true"] svg{transform:rotate(180deg)}
+.sub{font-size:12.5px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.iconbtn{width:46px;height:46px;flex:none;border-radius:16px!important;display:grid;place-items:center}
+.iconbtn svg{width:22px;height:22px}
+.menu{position:absolute;top:calc(100% + 6px);left:0;width:min(290px,100%);z-index:15;background:var(--surface);border-radius:22px;padding:6px;box-shadow:0 0 0 1.5px var(--pad-edge),0 20px 40px -16px rgba(40,10,90,.4);transform-origin:20% 0;animation:pop-in .35s cubic-bezier(.3,1.6,.5,1)}
+.menu[hidden]{display:none}
+@keyframes pop-in{from{opacity:0;transform:scale(.85) translateY(-6px)}}
+.menu button{display:flex;width:100%;align-items:center;gap:10px;border:0;background:transparent;text-align:left;padding:10px 12px;border-radius:16px;cursor:pointer;font-size:14px}
+.menu button:hover{background:var(--pad)}
+.menu .mdot{width:9px;height:9px;border-radius:50%;background:var(--ink-3);flex:none}
+.menu .mdot.on{background:var(--good)}
+.menu small{display:block;color:var(--ink-2);font-size:12px}
+.menu .sep{height:1.5px;background:var(--pad-edge);margin:4px 8px}
+
+/* slider */
+.sld{grid-area:sld;display:flex;align-items:center;gap:10px;color:var(--ink-2)}
+.sld svg{width:30px;height:30px;flex:none}
+.sld input{flex:1;min-width:0;-webkit-appearance:none;appearance:none;height:34px;background:transparent;margin:0;cursor:pointer;--pct:44%}
+.sld input::-webkit-slider-runnable-track{height:12px;border-radius:99px;background:linear-gradient(90deg,var(--laser) 0 var(--pct),var(--pad) var(--pct));box-shadow:inset 0 0 0 1.5px var(--pad-edge)}
+.sld input::-moz-range-track{height:12px;border-radius:99px;background:var(--pad);box-shadow:inset 0 0 0 1.5px var(--pad-edge)}
+.sld input::-moz-range-progress{height:12px;border-radius:99px;background:var(--laser)}
+.sld input::-webkit-slider-thumb{-webkit-appearance:none;width:30px;height:30px;margin-top:-9px;border-radius:50%;border:0;
+  background:radial-gradient(circle at 34% 30%,rgba(255,255,255,.75) 0 3px,transparent 4px),repeating-linear-gradient(38deg,var(--yarn-a) 0 3px,var(--yarn-b) 3px 6px);
+  box-shadow:0 3px 0 var(--laser-shadow),0 0 0 3px var(--screen);transition:transform .4s cubic-bezier(.3,1.9,.45,1)}
+.sld input::-moz-range-thumb{width:30px;height:30px;border-radius:50%;border:0;
+  background:radial-gradient(circle at 34% 30%,rgba(255,255,255,.75) 0 3px,transparent 4px),repeating-linear-gradient(38deg,var(--yarn-a) 0 3px,var(--yarn-b) 3px 6px);
+  box-shadow:0 3px 0 var(--laser-shadow),0 0 0 3px var(--screen)}
+.sld input:active::-webkit-slider-thumb{transform:scale(1.18) rotate(40deg)}
+.sld input:focus-visible{outline-offset:1px;border-radius:99px}
+
+/* pad zone */
+.padzone{grid-area:pad;display:grid;grid-template-columns:minmax(0,1fr) 46px;grid-template-rows:minmax(0,1fr) 44px;gap:10px;min-height:0}
+.pad{position:relative;border-radius:28px;overflow:hidden;touch-action:none;cursor:crosshair;user-select:none;-webkit-user-select:none;
+  background:radial-gradient(var(--pad-dot) 1.3px,transparent 1.8px) 0 0/20px 20px,var(--pad);
+  box-shadow:inset 0 0 0 1.5px var(--pad-edge),inset 0 10px 26px -16px rgba(60,30,110,.3)}
+.pad-hint{position:absolute;inset:0;display:grid;place-content:center;text-align:center;gap:4px;color:var(--ink-3);font-size:12.5px;line-height:1.35;pointer-events:none;transition:opacity .6s;padding:0 30px}
+.pad-hint b{font:600 15px var(--display);color:var(--ink-2)}
+.pad.used .pad-hint{opacity:0}
+.laser-pill{position:absolute;top:12px;left:50%;transform:translate(-50%,-160%);background:var(--laser);color:#fff;font:600 12px var(--body);padding:6px 12px;border-radius:99px;white-space:nowrap;transition:transform .45s cubic-bezier(.3,1.6,.5,1);pointer-events:none;z-index:4;box-shadow:0 6px 16px -6px var(--laser-glow)}
+.laser-on .laser-pill{transform:translate(-50%,0)}
+.pad-dot{position:absolute;left:-9px;top:-9px;width:18px;height:18px;border-radius:50%;background:var(--laser);box-shadow:0 0 0 5px var(--laser-glow),0 0 22px 6px var(--laser-glow);pointer-events:none;z-index:3;opacity:0;scale:.3;transition:opacity .25s,scale .35s cubic-bezier(.3,1.9,.45,1)}
+.pad-dot.on{opacity:1;scale:1}
+.pad-dot.ring::after{content:"";position:absolute;inset:-14px;border-radius:50%;border:3px solid var(--laser);animation:ring .6s ease-out}
+@keyframes ring{from{transform:scale(.4);opacity:1}to{transform:scale(1.4);opacity:0}}
+.puff{position:absolute;width:16px;height:16px;margin:-8px;border-radius:50%;background:var(--ink-3);opacity:.35;pointer-events:none;z-index:1}
+
+.strip{position:relative;border-radius:18px;background-color:var(--pad);touch-action:none;cursor:grab;overflow:hidden;
+  box-shadow:inset 0 0 0 1.5px var(--pad-edge);transition:box-shadow .2s}
+.strip.active{box-shadow:inset 0 0 0 2.5px var(--ok);cursor:grabbing}
+.vstrip{grid-column:2;grid-row:1;background-image:repeating-linear-gradient(180deg,var(--stripe) 0 8px,transparent 8px 22px);background-position:0 var(--off,0px)}
+.hstrip{grid-column:1;grid-row:2;background-image:repeating-linear-gradient(90deg,var(--stripe) 0 8px,transparent 8px 22px);background-position:var(--off,0px) 0}
+.strip svg{position:absolute;width:16px;height:16px;color:var(--ink-3)}
+.vstrip .s-a{top:10px;left:15px;transform:rotate(180deg)}.vstrip .s-b{bottom:10px;left:15px}
+.hstrip .s-a{left:12px;top:14px;transform:rotate(90deg)}.hstrip .s-b{right:12px;top:14px;transform:rotate(-90deg)}
+.phone.wide .btn{flex-direction:row;gap:8px;font-size:14px}
+.phone.wide .laser .lstate{display:none}
+.phone.wide .laser .llbl{text-align:left}
+
+/* jelly buttons */
+.jelly{--j:var(--jelly);--jt:var(--jelly-top);--js:var(--jelly-shadow);--ji:var(--jelly-ink);
+  position:relative;border:0;border-radius:24px;color:var(--ji);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;-webkit-user-select:none;
+  background:linear-gradient(180deg,var(--jt),var(--j));
+  box-shadow:inset 0 2px 0 var(--gloss),inset 0 -5px 10px -4px rgba(40,10,80,.10),0 5px 0 var(--js),0 14px 22px -14px var(--js);
+  transition:transform .55s cubic-bezier(.3,1.9,.45,1),box-shadow .35s ease,background .3s;}
+.jelly::before{content:"";position:absolute;left:13%;top:6px;width:30%;height:8px;border-radius:99px;background:var(--gloss);opacity:.75;pointer-events:none}
+.jelly.down{transform:translateY(4px) scale(1.05,.9);transition-duration:.07s;transition-timing-function:ease-out;
+  box-shadow:inset 0 2px 0 var(--gloss),inset 0 -3px 8px -4px rgba(40,10,80,.1),0 1px 0 var(--js),0 4px 10px -8px var(--js)}
+.btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font:600 13px/1.15 var(--body);padding:4px 6px;text-align:center;min-width:0}
+.btn svg{width:25px;height:25px;flex:none}
+#backBtn{grid-area:back}#homeBtn{grid-area:home}#typeBtn{grid-area:type}#laserBtn{grid-area:laser}#recBtn{grid-area:rec}#okBtn{grid-area:ok}
+.ok{--j:var(--ok);--jt:var(--ok-top);--js:var(--ok-shadow);--ji:#fff;font:600 34px/1 var(--display);letter-spacing:.02em;border-radius:30px}
+.ok .paw{position:absolute;right:16px;bottom:12px;width:18px;height:18px;opacity:.35}
+.phone.wide .ok{font-size:52px;border-radius:34px}
+.laser[aria-pressed="true"]{--j:var(--laser);--jt:var(--laser-top);--js:var(--laser-shadow);--ji:#fff}
+.laser[aria-pressed="true"]::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:0 0 0 0 var(--laser-glow);animation:laser-pulse 1.8s ease-out infinite;pointer-events:none}
+@keyframes laser-pulse{0%{box-shadow:0 0 0 0 var(--laser-glow)}100%{box-shadow:0 0 0 12px transparent}}
+.laser .lstate{font:600 10.5px var(--body);text-transform:uppercase;letter-spacing:.08em;padding:2px 7px;border-radius:99px;background:color-mix(in srgb,currentColor 12%,transparent)}
+.laser .llbl{max-width:100%}
+.med{grid-area:med;display:none;gap:10px;grid-template-columns:1fr 1.3fr 1fr}
+.screen.playing .med{display:grid}
+.med .btn svg{width:22px;height:22px}
+.med .jelly{border-radius:20px}
+
+/* sheets */
+.scrim{position:absolute;inset:0;background:var(--scrim);opacity:0;pointer-events:none;transition:opacity .25s;z-index:20}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:absolute;left:50%;bottom:8px;width:min(420px,calc(100% - 16px));z-index:21;background:var(--surface);border-radius:34px;padding:10px 20px 26px;
+  transform:translate(-50%,115%);transition:transform .5s cubic-bezier(.3,1.35,.5,1);box-shadow:0 -10px 40px -20px rgba(30,10,70,.5)}
+.sheet.on{transform:translate(-50%,0)}
+.sheet .grab{width:40px;height:5px;border-radius:9px;background:var(--pad-edge);margin:0 auto 14px}
+.sheet h2{font:600 22px var(--display);margin:0 0 12px}
+.sheet input[type=text]{width:100%;font:500 17px var(--body);color:var(--ink);background:var(--pad);border:0;border-radius:18px;padding:14px 16px;box-shadow:inset 0 0 0 1.5px var(--pad-edge)}
+.sheet input[type=text]:focus{outline:none;box-shadow:inset 0 0 0 2.5px var(--ok)}
+.sheet .row{display:flex;gap:10px;margin-top:14px}
+.sheet .row .jelly{flex:1;height:50px;font-weight:600;font-size:15px}
+.sheet .row .ok{font:600 17px var(--display)}
+.sheet .note{font-size:12.5px;color:var(--ink-2);margin:10px 2px 0}
+.setrow{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1.5px solid var(--pad);font-size:15px}
+.setrow small{display:block;color:var(--ink-2);font-size:12px}
+
+/* cat */
+.cat-pos{position:absolute;left:0;top:0;width:84px;height:76px;transform-origin:42px 76px;z-index:2;pointer-events:none}
+.cat-act{width:84px;height:76px;transform-origin:50% 100%}
+.cat-off .cat-pos{display:none}
+#cat{display:block;overflow:visible}
+.cat-hit{position:absolute;left:14px;top:4px;width:56px;height:50px;border-radius:50%;border:0;background:transparent;pointer-events:auto;cursor:pointer;padding:0}
+.bubble{position:absolute;left:52px;bottom:calc(100% - 10px);white-space:nowrap;background:var(--surface);color:var(--ink);font:600 13px var(--display);padding:6px 11px;border-radius:14px 14px 14px 4px;box-shadow:0 0 0 1.5px var(--ink),0 3px 0 var(--ink);transform:scale(.3) translateY(10px);transform-origin:0 100%;opacity:0;transition:transform .4s cubic-bezier(.3,1.8,.5,1),opacity .2s;pointer-events:none;z-index:3}
+.bubble.show{opacity:1;transform:none}
+.heart{position:absolute;width:16px;height:16px;color:var(--cat-pink);pointer-events:none}
+
+#cat .c-all{transform-origin:50px 88px;transition:transform .25s ease}
+#cat .c-tail{transform-origin:66px 80px;animation:swish 2.6s ease-in-out infinite}
+@keyframes swish{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(10deg)}}
+#cat.alert .c-tail{animation-duration:.9s}
+#cat.hunt .c-tail{animation:twitch .34s ease-in-out infinite}
+@keyframes twitch{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(16deg)}}
+#cat .c-body{transform-origin:50px 86px}
+#cat.hunt .c-body{animation:wiggle .22s ease-in-out infinite}
+@keyframes wiggle{0%,100%{transform:rotate(-1.8deg)}50%{transform:rotate(1.8deg)}}
+#cat.hunt .c-all{transform:translateY(2px) scaleY(.95)}
+#cat .pupil{transform-box:fill-box;transform-origin:center;transition:transform .2s cubic-bezier(.3,1.8,.5,1)}
+#cat.hunt .pupil,#cat.zoom .pupil,#cat.startle .pupil,#cat.alert .pupil{transform:scale(1.3)}
+#cat .c-ears{transform-origin:50px 32px;transition:transform .35s cubic-bezier(.3,1.8,.5,1)}
+#cat.alert .c-ears,#cat.startle .c-ears{transform:translateY(-1.5px) scaleY(1.1)}
+#cat.zoom .c-ears{transform:scaleX(1.14) scaleY(.8) translateY(3px)}
+#cat .c-eyes{transform-origin:50px 40px;transition:transform .08s}
+#cat.blink .c-eyes{transform:scaleY(.1)}
+#cat .c-closed{display:none}
+#cat.asleep .c-eyes,#cat.purr .c-eyes,#cat.slowblink .c-eyes{display:none}
+#cat.asleep .c-closed,#cat.purr .c-closed,#cat.slowblink .c-closed{display:inline}
+#cat .c-head{transform-origin:50px 56px;transition:transform .6s cubic-bezier(.3,1.4,.5,1)}
+#cat .c-headlook{transform-origin:50px 56px}
+#cat.asleep .c-head{transform:translateY(6px) rotate(-8deg)}
+#cat.asleep .c-ears{transform:translateY(2px) scaleY(.85)}
+#cat.asleep .c-body{animation:breathe 3.2s ease-in-out infinite}
+#cat.asleep .c-tail{animation:none;transform:rotate(-24deg)}
+@keyframes breathe{50%{transform:scaleY(1.05) scaleX(1.02)}}
+#cat .c-zzz{display:none}
+#cat.asleep .c-zzz{display:inline}
+#cat .c-zzz text{font:700 12px var(--display);fill:var(--ink-2);opacity:0;transform-box:fill-box;transform-origin:center;animation:zz 2.7s linear infinite}
+#cat .c-zzz text:nth-child(2){animation-delay:.9s}
+#cat .c-zzz text:nth-child(3){animation-delay:1.8s}
+@keyframes zz{0%{opacity:0;transform:translate(0,0) scale(.6)}20%{opacity:1}100%{opacity:0;transform:translate(10px,-22px) scale(1.15)}}
+#cat.purr .c-all{animation:purr .26s ease-in-out 4}
+@keyframes purr{0%,100%{transform:rotate(0)}25%{transform:rotate(-4deg) scale(1.03,.97)}75%{transform:rotate(4deg) scale(1.03,.97)}}
+#cat .paw{transform-box:fill-box;transform-origin:center}
+#cat.knead .paw-l{animation:knead .3s ease-in-out 4 alternate}
+#cat.knead .paw-r{animation:knead .3s ease-in-out 4 alternate .15s}
+@keyframes knead{to{transform:translateY(-3.5px) scaleX(.9)}}
+#cat.zoom .c-tail{animation:none;transform:rotate(38deg)}
+
+/* ---------- TV ---------- */
+.tvlabel{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--ink-2);margin:0 4px 8px}
+.tvlabel b{font:600 15px var(--display);color:var(--ink)}
+.tv{background:#0B0912;border-radius:16px;padding:8px;box-shadow:0 30px 50px -30px rgba(30,10,60,.6),inset 0 0 0 1.5px rgba(255,255,255,.06)}
+.tv-stand{width:30%;height:10px;margin:0 auto;border-radius:0 0 12px 12px;background:#0B0912;opacity:.85}
+.tvscreen{container-type:inline-size;position:relative;aspect-ratio:16/9;border-radius:9px;overflow:hidden;color:#fff;font-family:var(--body);
+  background:radial-gradient(120% 80% at 80% 0%,#2b1f55 0%,transparent 60%),#0E0C1C;user-select:none;-webkit-user-select:none;touch-action:none}
+.tvscreen.laser-on{cursor:none}
+.tv-top{position:absolute;top:3.2cqw;left:4cqw;right:4cqw;display:flex;align-items:center;gap:1.3cqw}
+.tv-search,.tv-chip{font-size:1.7cqw;padding:.8cqw 1.8cqw;border-radius:99px;background:rgba(255,255,255,.08);white-space:nowrap;transition:transform .3s cubic-bezier(.3,1.8,.5,1),background .2s,outline-color .2s;outline:.3cqw solid transparent;outline-offset:.25cqw}
+.tv-search{display:flex;align-items:center;gap:.8cqw;min-width:18cqw;color:rgba(255,255,255,.7)}
+.tv-search svg{width:1.8cqw;height:1.8cqw}
+.tv-search.typing{color:#fff}
+.tv-clock{margin-left:auto;font-size:1.7cqw;opacity:.7}
+.tv-hero{position:absolute;top:10.5cqw;left:4cqw;right:4cqw;height:20cqw;border-radius:1.6cqw;overflow:hidden;
+  background:linear-gradient(115deg,#26175a 0%,#6b35d9 52%,#ff7a9c 100%);outline:.3cqw solid transparent;outline-offset:.3cqw;transition:transform .35s cubic-bezier(.3,1.6,.5,1),outline-color .2s}
+.tv-hero .moon{position:absolute;right:9cqw;top:2.4cqw;width:9cqw;height:9cqw;border-radius:50%;background:#ffe3a8;box-shadow:0 0 5cqw 1cqw rgba(255,227,168,.45)}
+.tv-hero svg.sil{position:absolute;right:12cqw;bottom:0;height:13cqw}
+.tv-hero .wall{position:absolute;left:0;right:0;bottom:0;height:2cqw;background:#1a1036}
+.hero-txt{position:absolute;left:3cqw;top:3.4cqw;display:grid;gap:.6cqw}
+.hero-txt small{font-size:1.4cqw;letter-spacing:.12em;text-transform:uppercase;opacity:.8}
+.hero-txt b{font:600 4cqw/1 var(--display)}
+.hero-txt span{font-size:1.5cqw;background:#fff;color:#1a1036;border-radius:99px;padding:.6cqw 1.6cqw;justify-self:start;font-weight:700;margin-top:1cqw}
+.tv-rowlbl{position:absolute;top:33.2cqw;left:4cqw;font-size:1.8cqw;font-weight:600;opacity:.85}
+.tv-row{position:absolute;top:36.6cqw;left:4cqw;right:4cqw;display:flex;gap:1.6cqw}
+.tile{position:relative;flex:1;aspect-ratio:16/10;border-radius:1.2cqw;background:linear-gradient(135deg,var(--c1),var(--c2));outline:.3cqw solid transparent;outline-offset:.25cqw;transition:transform .35s cubic-bezier(.3,1.6,.5,1),outline-color .2s}
+.tile span{position:absolute;left:0;right:0;bottom:0;padding:2cqw .9cqw .7cqw;font-size:1.3cqw;font-weight:600;border-radius:0 0 1.2cqw 1.2cqw;background:linear-gradient(transparent,rgba(0,0,0,.55))}
+.tile i{position:absolute;left:50%;top:38%;width:3.4cqw;height:3.4cqw;margin:-1.7cqw;border-radius:50%;background:rgba(255,255,255,.28)}
+.tile:nth-child(2n) i{border-radius:.6cqw;transform:rotate(45deg)}
+.tvscreen .focused{outline-color:#fff;transform:scale(1.05);background-color:rgba(255,255,255,.16)}
+.tv-hero.focused{transform:scale(1.015)}
+.tvscreen .clicked{animation:tv-click .5s cubic-bezier(.3,1.6,.5,1)}
+@keyframes tv-click{30%{transform:scale(.93)}}
+.tvscreen .bump-x{animation:bump-x .3s}.tvscreen .bump-y{animation:bump-y .3s}
+@keyframes bump-x{30%{translate:.6cqw 0}60%{translate:-.4cqw 0}}
+@keyframes bump-y{30%{translate:0 .6cqw}60%{translate:0 -.4cqw}}
+.tv.catmode .tile::before,.tv.catmode .tile::after{content:"";position:absolute;top:-1.9cqw;width:3cqw;height:2.4cqw;background:var(--c1);clip-path:polygon(50% 0,100% 100%,0 100%);animation:ears-up .5s cubic-bezier(.3,1.9,.45,1)}
+.tv.catmode .tile::before{left:12%}.tv.catmode .tile::after{right:12%}
+@keyframes ears-up{from{transform:translateY(100%) scaleY(0)}}
+.tv-np{position:absolute;left:4cqw;right:4cqw;bottom:2.4cqw;height:4.6cqw;border-radius:99px;background:rgba(18,14,36,.88);display:flex;align-items:center;gap:1.4cqw;padding:0 2.2cqw;font-size:1.5cqw;transform:translateY(170%);transition:transform .5s cubic-bezier(.3,1.4,.5,1)}
+.tv-np.on{transform:none}
+.tv-np svg{width:1.8cqw;height:1.8cqw}
+.tv-np .bar{flex:1;height:.55cqw;border-radius:99px;background:rgba(255,255,255,.2);overflow:hidden}
+.tv-np .bar i{display:block;height:100%;width:var(--p,30%);background:#ff4469;border-radius:99px;transition:width .3s}
+.tv-osd{position:absolute;top:13cqw;left:50%;transform:translate(-50%,-30%) scale(.8);opacity:0;background:rgba(255,255,255,.95);color:#160f2b;font:600 2cqw var(--display);padding:1cqw 2.6cqw;border-radius:99px;transition:opacity .2s,transform .4s cubic-bezier(.3,1.8,.5,1);pointer-events:none;z-index:6;white-space:nowrap}
+.tv-osd.on{opacity:1;transform:translate(-50%,0) scale(1)}
+.tv-dot{position:absolute;left:50%;top:50%;width:1.7cqw;height:1.7cqw;margin:-.85cqw;border-radius:50%;background:#ff2e58;z-index:7;pointer-events:none;
+  box-shadow:0 0 0 .45cqw rgba(255,46,88,.28),0 0 2.2cqw .7cqw rgba(255,46,88,.55);transition:opacity .3s,width .3s,height .3s,margin .3s}
+.tv-dot.glide{transition:left .45s cubic-bezier(.3,1.5,.5,1),top .45s cubic-bezier(.3,1.5,.5,1),opacity .3s}
+.tv-dot.dim{opacity:.25}
+.laser-on .tv-dot{width:2.3cqw;height:2.3cqw;margin:-1.15cqw;animation:laser-tv 1.1s ease-in-out infinite}
+@keyframes laser-tv{50%{box-shadow:0 0 0 .8cqw rgba(255,46,88,.22),0 0 3.4cqw 1.2cqw rgba(255,46,88,.6)}}
+.tv-ripple{position:absolute;width:6cqw;height:6cqw;margin:-3cqw;border-radius:50%;border:.35cqw solid #ff4469;pointer-events:none;z-index:6;animation:ring .55s ease-out forwards}
+
+/* secrets */
+details.secrets{max-width:760px;margin:44px auto 0;background:var(--surface);border-radius:24px;padding:4px 22px;box-shadow:0 0 0 1.5px var(--pad-edge)}
+details.secrets summary{cursor:pointer;font:600 18px var(--display);padding:16px 0;list-style:none;display:flex;align-items:center;gap:10px}
+details.secrets summary::-webkit-details-marker{display:none}
+details.secrets summary svg{width:20px;height:20px;color:var(--laser);transition:transform .3s}
+details.secrets[open] summary svg{transform:rotate(90deg)}
+details.secrets ol{margin:0 0 18px;padding-left:22px;line-height:1.55;color:var(--ink-2);font-size:15px}
+details.secrets li{margin-bottom:8px}
+details.secrets li b{color:var(--ink)}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+  #cat .c-zzz text{animation:none!important;opacity:.9}
+  #cat .c-zzz text:nth-child(2){transform:translate(7px,-9px)}
+  #cat .c-zzz text:nth-child(3){transform:translate(14px,-18px)}
+  .jelly.down{transform:translateY(2px)}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></g></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></g></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20.5V10.5L5.6 3.8 9.6 7.4h4.8l4-3.6 1.6 6.7v10z"/><path d="M10 20.5v-4a2 2 0 0 1 4 0v4"/></g></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12.5" rx="3.2"/><path d="M6.5 10h.01M10 10h.01M13.8 10h.01M17.5 10h.01M8 14.6h8"/></g></symbol>
+    <symbol id="i-laser" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 20.5l4.8-4.8" stroke-width="3.6"/><path d="M10.6 13.4l2.9-2.9" stroke-width="2" stroke-dasharray="1.2 2.4"/><circle cx="16.6" cy="7.4" r="2.4" fill="currentColor" stroke-width="0"/><path d="M16.6 2.2v1.4M21.8 7.4h-1.4M20.3 3.7l-1 1M20.3 11.1l-1-1" stroke-width="2"/></g></symbol>
+    <symbol id="i-rec" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="7"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/><circle cx="12" cy="12" r="1.8" fill="currentColor" stroke-width="0"/></g></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.6v12.8a1 1 0 0 0 1.5.86l10.3-6.4a1 1 0 0 0 0-1.72L9.5 4.74A1 1 0 0 0 8 5.6z" fill="currentColor"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="5" width="4.4" height="14" rx="1.6" fill="currentColor"/><rect x="13.6" y="5" width="4.4" height="14" rx="1.6" fill="currentColor"/></symbol>
+    <symbol id="i-rew" viewBox="0 0 24 24"><g fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M11.5 7v10L4 12z"/><path d="M20 7v10l-7.5-5z"/></g></symbol>
+    <symbol id="i-fwd" viewBox="0 0 24 24"><g fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12.5 7v10L20 12z"/><path d="M4 7v10l7.5-5z"/></g></symbol>
+    <symbol id="i-loaf" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 24c0-8 5-11.5 12-11.5S28 16 28 24z"/><path d="M8.2 14.2 8.6 8.8l4 3.8M23.8 14.2l-.4-5.4-4 3.8"/><path d="M11.5 18.6q1.4 1 2.8 0M17.7 18.6q1.4 1 2.8 0"/></g></symbol>
+    <symbol id="i-zoom" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M13 11l.6-5.6 4.2 3.8h3.4l4.2-3.8.6 5.6c2.2 2.6 2.2 8.2-.6 10.6-3 2.6-8.6 2.6-11.6 0-2.8-2.4-2.8-8-.8-10.6z"/><path d="M2 12.5h6M3 17h5M2 21.5h6"/><path d="M17.4 15.4h.01M22.4 15.4h.01" stroke-width="3.2"/></g></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 20 20"/></g></symbol>
+    <symbol id="i-paw" viewBox="0 0 24 24"><g fill="currentColor"><ellipse cx="12" cy="16" rx="5" ry="4.2"/><ellipse cx="5.6" cy="10.6" rx="2" ry="2.6"/><ellipse cx="9.4" cy="6.6" rx="2" ry="2.7"/><ellipse cx="14.6" cy="6.6" rx="2" ry="2.7"/><ellipse cx="18.4" cy="10.6" rx="2" ry="2.6"/></g></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 21s-7.4-4.6-9.6-9.2A5.5 5.5 0 0 1 12 6.2a5.5 5.5 0 0 1 9.6 5.6C19.4 16.4 12 21 12 21z" fill="currentColor"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<main class="page">
+  <section class="intro">
+    <h1>AirPoint, Laser Cat<span class="dot" aria-hidden="true"></span></h1>
+    <p>The same fast Google TV remote, but the laser pointer is a cat toy. Biscuit lives on the touchpad: she watches the dot, pounces when you click, naps when you wander off, and gets the zoomies if you wave the laser around.</p>
+  </section>
+
+  <div class="controls">
+    <div class="seg" role="radiogroup" aria-label="Layout">
+      <button role="radio" aria-checked="true" data-layout="phone">Phone</button>
+      <button role="radio" aria-checked="false" data-layout="wide">Unfolded Duo</button>
+    </div>
+    <button class="sw" role="switch" aria-checked="false" id="playSw"><span class="track"></span>Something's playing</button>
+    <button class="sw" role="switch" aria-checked="false" id="soundSw"><span class="track"></span>Sound</button>
+    <div class="seg" role="radiogroup" aria-label="Theme">
+      <button role="radio" aria-checked="true" data-theme-set="auto">Auto</button>
+      <button role="radio" aria-checked="false" data-theme-set="light">Light</button>
+      <button role="radio" aria-checked="false" data-theme-set="dark">Dark</button>
+    </div>
+  </div>
+
+  <div class="demo" id="demo">
+    <div class="phonecol">
+      <div id="stageWrap">
+        <div class="stage" id="stage">
+          <div class="phone" id="phone">
+            <div class="glass" id="glass">
+              <div class="statusbar" aria-hidden="true"><span>9:41</span>
+                <svg viewBox="0 0 64 13"><g fill="currentColor"><rect x="0" y="8" width="3" height="5" rx="1"/><rect x="5" y="5.5" width="3" height="7.5" rx="1"/><rect x="10" y="3" width="3" height="10" rx="1"/><rect x="15" y="0" width="3" height="13" rx="1"/><path d="M30 3.2a10 10 0 0 1 12 0l-1.4 1.6a7.8 7.8 0 0 0-9.2 0zM32.4 6.2a6 6 0 0 1 7.2 0L38.2 7.8a3.8 3.8 0 0 0-4.4 0zM36 12l-1.6-2a2.6 2.6 0 0 1 3.2 0z"/><rect x="47" y="1.5" width="15" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".5"/><rect x="48.8" y="3.3" width="10.5" height="6.4" rx="1.6"/><rect x="62.6" y="4.6" width="1.4" height="3.8" rx=".7" opacity=".5"/></g></svg>
+              </div>
+              <div class="island" aria-hidden="true"></div>
+              <div class="crease" aria-hidden="true"></div>
+
+              <div class="screen" id="screen">
+                <header class="hdr">
+                  <span class="status-dot" id="statusDot" aria-hidden="true"></span>
+                  <div class="hdr-text">
+                    <button class="tvname" id="tvBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="tvMenu"><span>GoogleTV5387</span><svg aria-hidden="true"><use href="#i-chev"/></svg></button>
+                    <div class="sub" id="sub" aria-live="polite">Connected to GoogleTV5387</div>
+                  </div>
+                  <button class="jelly iconbtn" id="gearBtn" aria-label="Settings" data-pitch="440"><svg aria-hidden="true"><use href="#i-gear"/></svg></button>
+                  <div class="menu" id="tvMenu" role="menu" hidden>
+                    <button role="menuitem" data-tv="main"><span class="mdot on"></span><span>GoogleTV5387<small>Connected</small></span></button>
+                    <button role="menuitem" data-tv="bed"><span class="mdot"></span><span>Bedroom TV<small>Offline</small></span></button>
+                    <button role="menuitem" data-tv="box"><span class="mdot"></span><span>Cardboard Box<small>Occupied</small></span></button>
+                    <div class="sep"></div>
+                    <button role="menuitem" data-tv="scan"><span class="mdot" style="background:transparent"></span><span>Scan for TVs…</span></button>
+                  </div>
+                </header>
+
+                <div class="sld">
+                  <svg aria-hidden="true"><use href="#i-loaf"/></svg>
+                  <input type="range" id="speed" min="1" max="10" step="1" value="5" aria-label="Pointer speed" aria-valuetext="Speed 5 of 10">
+                  <svg aria-hidden="true"><use href="#i-zoom"/></svg>
+                </div>
+
+                <div class="padzone">
+                  <div class="pad" id="pad" tabindex="0" role="application" aria-label="Touchpad. Drag to move the cursor, tap to click, hold to long press, two-finger tap for Back. Arrow keys move, Enter clicks.">
+                    <div class="pad-hint" aria-hidden="true"><b>Drag to move · tap to click</b>hold = long press · two-finger tap = back</div>
+                    <div class="laser-pill" aria-hidden="true">Laser on · aim at the TV</div>
+                    <div class="pad-dot" id="padDot"></div>
+                    <div class="cat-pos" id="catPos">
+                      <div class="cat-act" id="catAct">
+                        <svg id="cat" viewBox="0 0 100 90" width="84" height="76" aria-hidden="true">
+                          <g class="c-all">
+                            <ellipse cx="50" cy="87" rx="30" ry="3.2" fill="rgba(40,10,80,.14)"/>
+                            <g class="c-tail">
+                              <path d="M66 80 C 90 82 96 62 87 48 C 84 43 88 38 92 41" fill="none" stroke="var(--cat-ink)" stroke-width="11.5" stroke-linecap="round"/>
+                              <path d="M66 80 C 90 82 96 62 87 48 C 84 43 88 38 92 41" fill="none" stroke="var(--cat)" stroke-width="7" stroke-linecap="round"/>
+                              <path d="M89.5 53 l4.5 -1.6 M88 61 l5 0.4" stroke="var(--cat-dark)" stroke-width="2.2" stroke-linecap="round"/>
+                            </g>
+                            <g class="c-body">
+                              <path d="M31 86 C 23.5 86 21.5 71 26.5 62.5 C 30.5 55.5 36 52 42 51 L 58 51 C 64 52 69.5 55.5 73.5 62.5 C 78.5 71 76.5 86 69 86 Z" fill="var(--cat)" stroke="var(--cat-ink)" stroke-width="2.6" stroke-linejoin="round"/>
+                              <path d="M42 85.5 C 40 76 43.5 64.5 50 63.5 C 56.5 64.5 60 76 58 85.5 Z" fill="var(--cat-cream)"/>
+                              <path d="M27.5 68.5 q4.5 .8 6.5 4.6 M72.5 68.5 q-4.5 .8 -6.5 4.6 M26.8 76 q4 .4 5.6 3.4" fill="none" stroke="var(--cat-dark)" stroke-width="2.2" stroke-linecap="round"/>
+                              <ellipse class="paw paw-l" cx="42.5" cy="85" rx="6.6" ry="4.1" fill="var(--cat-cream)" stroke="var(--cat-ink)" stroke-width="2.2"/>
+                              <ellipse class="paw paw-r" cx="57.5" cy="85" rx="6.6" ry="4.1" fill="var(--cat-cream)" stroke="var(--cat-ink)" stroke-width="2.2"/>
+                            </g>
+                            <g class="c-headlook"><g class="c-head">
+                              <g class="c-ears">
+                                <path d="M27 35 C 25.6 26 26.8 17.4 30 12 C 35.4 14.8 41 19.6 44.4 25 Z" fill="var(--cat)" stroke="var(--cat-ink)" stroke-width="2.6" stroke-linejoin="round"/>
+                                <path d="M30.6 28.5 C 30 23.5 30.6 19.4 32.2 16.8 C 35.2 18.6 38 21.2 39.8 24.2 Z" fill="var(--cat-pink)"/>
+                                <path d="M73 35 C 74.4 26 73.2 17.4 70 12 C 64.6 14.8 59 19.6 55.6 25 Z" fill="var(--cat)" stroke="var(--cat-ink)" stroke-width="2.6" stroke-linejoin="round"/>
+                                <path d="M69.4 28.5 C 70 23.5 69.4 19.4 67.8 16.8 C 64.8 18.6 62 21.2 60.2 24.2 Z" fill="var(--cat-pink)"/>
+                              </g>
+                              <path d="M50 22 C 66.5 21.6 78.4 29 78 41.4 C 77.6 53 66 58.4 50 58.2 C 34 58.4 22.2 53 22.2 41 C 22 29.2 33.8 22.2 50 22 Z" fill="var(--cat)" stroke="var(--cat-ink)" stroke-width="2.6"/>
+                              <path d="M50 24 v6 M44 25 l1.3 4.6 M56 25 l-1.3 4.6" stroke="var(--cat-dark)" stroke-width="2.3" stroke-linecap="round"/>
+                              <ellipse cx="50" cy="49" rx="9.4" ry="6.2" fill="var(--cat-cream)"/>
+                              <ellipse cx="32.5" cy="47.5" rx="4.2" ry="2.5" fill="var(--cat-pink)" opacity=".55"/>
+                              <ellipse cx="67.5" cy="47.5" rx="4.2" ry="2.5" fill="var(--cat-pink)" opacity=".55"/>
+                              <g class="c-look"><g class="c-eyes">
+                                <ellipse class="pupil" cx="40" cy="40" rx="3.9" ry="4.7" fill="var(--cat-ink)"/>
+                                <ellipse class="pupil" cx="60" cy="40" rx="3.9" ry="4.7" fill="var(--cat-ink)"/>
+                                <circle cx="41.4" cy="38.3" r="1.3" fill="#fff"/>
+                                <circle cx="61.4" cy="38.3" r="1.3" fill="#fff"/>
+                              </g></g>
+                              <path class="c-closed" d="M35.4 40.6 q4.6 3.6 9.2 0 M55.4 40.6 q4.6 3.6 9.2 0" fill="none" stroke="var(--cat-ink)" stroke-width="2.3" stroke-linecap="round"/>
+                              <path d="M47.6 45.4 h4.8 l-2.4 2.7 z" fill="var(--cat-pink)" stroke="var(--cat-ink)" stroke-width="1.3" stroke-linejoin="round"/>
+                              <path d="M50 48.2 q-1.6 3.1 -4.7 1.8 M50 48.2 q1.6 3.1 4.7 1.8" fill="none" stroke="var(--cat-ink)" stroke-width="1.6" stroke-linecap="round"/>
+                              <path d="M29.5 46 l-11 -2.2 M29.5 49.4 l-10 1.6 M70.5 46 l11 -2.2 M70.5 49.4 l10 1.6" stroke="var(--cat-ink)" stroke-width="1.3" stroke-linecap="round" opacity=".6"/>
+                            </g></g>
+                            <g class="c-zzz"><text x="74" y="22">z</text><text x="76" y="20">z</text><text x="78" y="18">Z</text></g>
+                          </g>
+                        </svg>
+                      </div>
+                      <button class="cat-hit" id="catHit" aria-label="Pet Biscuit the cat"></button>
+                      <div class="bubble" id="bubble" aria-live="polite"></div>
+                      <div id="hearts"></div>
+                    </div>
+                  </div>
+                  <div class="strip vstrip" id="vstrip" tabindex="0" role="slider" aria-orientation="vertical" aria-label="Vertical scroll strip, drag or use arrow keys for D-pad up and down" aria-valuemin="0" aria-valuemax="2" aria-valuenow="1">
+                    <svg class="s-a" aria-hidden="true"><use href="#i-chev"/></svg><svg class="s-b" aria-hidden="true"><use href="#i-chev"/></svg>
+                  </div>
+                  <div class="strip hstrip" id="hstrip" tabindex="0" role="slider" aria-orientation="horizontal" aria-label="Horizontal scroll strip, drag or use arrow keys for D-pad left and right" aria-valuemin="0" aria-valuemax="4" aria-valuenow="0">
+                    <svg class="s-a" aria-hidden="true"><use href="#i-chev"/></svg><svg class="s-b" aria-hidden="true"><use href="#i-chev"/></svg>
+                  </div>
+                </div>
+
+                <div class="med" id="med">
+                  <button class="jelly btn" id="rewBtn" aria-label="Rewind" data-pitch="380"><svg aria-hidden="true"><use href="#i-rew"/></svg></button>
+                  <button class="jelly btn" id="ppBtn" aria-label="Pause" data-pitch="520"><svg aria-hidden="true"><use id="ppIcon" href="#i-pause"/></svg></button>
+                  <button class="jelly btn" id="fwdBtn" aria-label="Forward" data-pitch="620"><svg aria-hidden="true"><use href="#i-fwd"/></svg></button>
+                </div>
+
+                <button class="jelly btn" id="backBtn" data-pitch="420"><svg aria-hidden="true"><use href="#i-back"/></svg>Back</button>
+                <button class="jelly btn" id="homeBtn" data-pitch="480"><svg aria-hidden="true"><use href="#i-home"/></svg>Home</button>
+                <button class="jelly btn" id="typeBtn" data-pitch="560"><svg aria-hidden="true"><use href="#i-key"/></svg>Type</button>
+                <button class="jelly btn laser" id="laserBtn" aria-pressed="false" data-pitch="700"><svg aria-hidden="true"><use href="#i-laser"/></svg><span class="llbl" id="laserLbl">Laser</span><span class="lstate" id="laserState">off</span></button>
+                <button class="jelly btn" id="recBtn" data-pitch="600"><svg aria-hidden="true"><use href="#i-rec"/></svg>Recenter</button>
+                <button class="jelly ok" id="okBtn" data-pitch="330">OK<svg class="paw" aria-hidden="true"><use href="#i-paw"/></svg></button>
+              </div>
+
+              <div class="scrim" id="scrim"></div>
+              <section class="sheet" id="typeSheet" role="dialog" aria-label="Type on TV" inert>
+                <div class="grab"></div>
+                <h2>Type on TV</h2>
+                <input type="text" id="typeInput" placeholder="Search on GoogleTV5387…" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Text to send to TV">
+                <p class="note">Letters appear on the TV as you type. Some words get a reaction.</p>
+                <div class="row">
+                  <button class="jelly" id="typeClear" data-pitch="420">Clear</button>
+                  <button class="jelly ok" id="typeDone" data-pitch="330">Done</button>
+                </div>
+              </section>
+              <section class="sheet" id="setSheet" role="dialog" aria-label="Settings" inert>
+                <div class="grab"></div>
+                <h2>Settings</h2>
+                <div class="setrow"><span>Show Biscuit<small>The cat on your touchpad. Off = plain pad.</small></span><button class="sw" role="switch" aria-checked="true" data-set="catOn" aria-label="Show Biscuit"><span class="track"></span></button></div>
+                <div class="setrow"><span>Sounds<small>Pops, purrs, the occasional meow.</small></span><button class="sw" role="switch" aria-checked="false" data-set="sound" aria-label="Sounds"><span class="track"></span></button></div>
+                <div class="setrow"><span>Haptics<small>Ticks on strips, thumps on OK.</small></span><button class="sw" role="switch" aria-checked="true" data-set="haptics" aria-label="Haptics"><span class="track"></span></button></div>
+                <div class="row"><button class="jelly ok" id="setDone" data-pitch="330">Done</button></div>
+              </section>
+              <div class="homebar" aria-hidden="true"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="hint">Mouse: right-click the pad = two-finger tap. Keyboard: focus the pad, arrows move, <kbd>Enter</kbd> clicks; arrows on the strips step focus.</p>
+    </div>
+
+    <div class="tvcol">
+      <div class="tvlabel"><b>GoogleTV5387</b><span id="tvHint">mock screen</span></div>
+      <div class="tv" id="tv">
+        <div class="tvscreen" id="tvScreen">
+          <div class="tv-top">
+            <div class="tv-search" data-r="0" data-c="0"><svg aria-hidden="true"><use href="#i-search"/></svg><span id="tvSearch">Search</span></div>
+            <div class="tv-chip" data-r="0" data-c="1">For you</div>
+            <div class="tv-chip" data-r="0" data-c="2">Movies</div>
+            <div class="tv-chip" data-r="0" data-c="3">Shows</div>
+            <div class="tv-chip" data-r="0" data-c="4">Apps</div>
+            <div class="tv-clock">9:41</div>
+          </div>
+          <div class="tv-hero" data-r="1" data-c="0">
+            <div class="moon"></div>
+            <svg class="sil" viewBox="0 0 80 100" aria-hidden="true"><path d="M18 100 C 13 72 20 54 29 47 C 25 41 25 32 27 23 L 33 30 C 36.4 29 40 29 43.4 30 L 49 23 C 51 32 51 41 47 47 C 57 55 61 73 57 100 Z" fill="#1a1036"/><path d="M56 96 C 74 96 80 80 71 70" fill="none" stroke="#1a1036" stroke-width="6" stroke-linecap="round"/></svg>
+            <div class="wall"></div>
+            <div class="hero-txt"><small>New season</small><b>The Great Catsby</b><span>Watch now</span></div>
+          </div>
+          <div class="tv-rowlbl">Continue watching</div>
+          <div class="tv-row">
+            <div class="tile" data-r="2" data-c="0" style="--c1:#ff7a59;--c2:#ffbf6b"><i></i><span>Whisker Wars</span></div>
+            <div class="tile" data-r="2" data-c="1" style="--c1:#4f46e5;--c2:#a06bff"><i></i><span>Nine Lives</span></div>
+            <div class="tile" data-r="2" data-c="2" style="--c1:#0e9f9a;--c2:#7be3c4"><i></i><span>Purrfect Storm</span></div>
+            <div class="tile" data-r="2" data-c="3" style="--c1:#d61f69;--c2:#ff9bb8"><i></i><span>The Meowtrix</span></div>
+            <div class="tile" data-r="2" data-c="4" style="--c1:#2f8f3a;--c2:#b6e35a"><i></i><span>Hairball Heist</span></div>
+          </div>
+          <div class="tv-np" id="tvNp"><svg aria-hidden="true"><use id="npIcon" href="#i-play"/></svg><span>The Great Catsby · S2 E4</span><div class="bar"><i id="npBar"></i></div><span id="npTime">14:02</span></div>
+          <div class="tv-osd" id="tvOsd" aria-live="polite"></div>
+          <div class="tv-dot" id="tvDot"></div>
+        </div>
+      </div>
+      <div class="tv-stand" aria-hidden="true"></div>
+    </div>
+  </div>
+
+  <details class="secrets">
+    <summary><svg aria-hidden="true"><use href="#i-spark"/></svg>Secrets (spoilers)</summary>
+    <ol>
+      <li><b>Pet Biscuit.</b> Tap the cat: she purrs, wiggles and floats hearts. Five pets in a row earns a slow blink, which in cat means "I love you".</li>
+      <li><b>Cat nap.</b> Leave the remote alone for 15 seconds. She curls up with zzz and the Laser button reads "Laser (cat napping)". Any touch wakes her with a "mrrp?".</li>
+      <li><b>Zoomies.</b> Draw a fast circle on the touchpad. She does two laps of the pad, kicks up dust, and lands like nothing happened.</li>
+      <li><b>Say the word.</b> Type "meow" in the Type sheet. She answers, and every tile on the TV grows ears.</li>
+      <li><b>Occupied.</b> Try connecting to "Cardboard Box" in the TV menu.</li>
+      <li><b>Small stuff.</b> Hold the pad and she kneads biscuits. The Home icon has ears. The speed slider runs from loaf to zoomies, and the thumb is a ball of yarn.</li>
+    </ol>
+  </details>
+</main>
+
+<script>
+(() => {
+  "use strict";
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const RM = matchMedia("(prefers-reduced-motion: reduce)");
+
+  const phone = $("#phone"), stage = $("#stage"), stageWrap = $("#stageWrap"), screen = $("#screen"), glass = $("#glass");
+  const pad = $("#pad"), padDot = $("#padDot"), catPos = $("#catPos"), catAct = $("#catAct"), cat = $("#cat");
+  const bubble = $("#bubble"), heartsEl = $("#hearts");
+  const tvEl = $("#tv"), tvScreen = $("#tvScreen"), tvDot = $("#tvDot"), tvOsd = $("#tvOsd");
+  const laserBtn = $("#laserBtn"), laserLbl = $("#laserLbl"), laserState = $("#laserState");
+  const look = $(".c-look", cat), headLook = $(".c-headlook", cat);
+
+  const TVW = 1600, TVH = 900, CAT_W = 84, CAT_H = 76, NAP_MS = 15000;
+  const S = {
+    speed: 5, laser: false, playing: false, paused: false, asleep: false, catOn: true,
+    sound: false, haptics: true, dot: { x: 800, y: 450 }, r: 1, c: 0, memC: 0, progress: 0.34,
+    lastTouch: performance.now(), pets: [], zooming: false, meowed: false
+  };
+  let scale = 1, padW = 300, padH = 400, base = { x: 8, y: 300 }, catXY = { x: 8, y: 300 };
+
+  /* ---------------- sound + haptics ---------------- */
+  let ac = null;
+  function A() {
+    if (!S.sound) return null;
+    try {
+      ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+      if (ac.state === "suspended") ac.resume();
+      return ac;
+    } catch (e) { return null; }
+  }
+  function env(g, t, a, peak, d) {
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(peak, t + a);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + a + d);
+  }
+  function pop(f = 520, vol = 0.16) {
+    const a = A(); if (!a) return;
+    const t = a.currentTime, o = a.createOscillator(), g = a.createGain();
+    o.type = "sine"; o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 0.55, t + 0.09);
+    env(g, t, 0.005, vol, 0.1); o.connect(g).connect(a.destination); o.start(t); o.stop(t + 0.15);
+  }
+  const tick = () => pop(980, 0.06);
+  function meow() {
+    const a = A(); if (!a) return;
+    const t = a.currentTime, o = a.createOscillator(), f = a.createBiquadFilter(), g = a.createGain();
+    o.type = "sawtooth";
+    o.frequency.setValueAtTime(460, t); o.frequency.linearRampToValueAtTime(720, t + 0.16); o.frequency.linearRampToValueAtTime(380, t + 0.6);
+    f.type = "bandpass"; f.Q.value = 5;
+    f.frequency.setValueAtTime(800, t); f.frequency.linearRampToValueAtTime(1600, t + 0.18); f.frequency.linearRampToValueAtTime(700, t + 0.6);
+    env(g, t, 0.06, 0.4, 0.55);
+    o.connect(f).connect(g).connect(a.destination); o.start(t); o.stop(t + 0.7);
+  }
+  function mrrp() {
+    const a = A(); if (!a) return;
+    const t = a.currentTime, o = a.createOscillator(), lfo = a.createOscillator(), lg = a.createGain(), g = a.createGain();
+    o.type = "triangle"; o.frequency.setValueAtTime(380, t); o.frequency.exponentialRampToValueAtTime(640, t + 0.2);
+    lfo.frequency.value = 34; lg.gain.value = 45; lfo.connect(lg).connect(o.frequency);
+    env(g, t, 0.02, 0.22, 0.24);
+    o.connect(g).connect(a.destination); o.start(t); lfo.start(t); o.stop(t + 0.3); lfo.stop(t + 0.3);
+  }
+  function purr() {
+    const a = A(); if (!a) return;
+    const t = a.currentTime, dur = 1.4, len = Math.floor(a.sampleRate * dur);
+    const b = a.createBuffer(1, len, a.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    const src = a.createBufferSource(); src.buffer = b;
+    const lp = a.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 190;
+    const am = a.createGain(); am.gain.value = 0.5;
+    const lfo = a.createOscillator(), lg = a.createGain(); lfo.frequency.value = 25; lg.gain.value = 0.5; lfo.connect(lg).connect(am.gain);
+    const out = a.createGain();
+    out.gain.setValueAtTime(0.0001, t); out.gain.exponentialRampToValueAtTime(1.1, t + 0.15);
+    out.gain.setValueAtTime(1.1, t + dur - 0.3); out.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(lp).connect(am).connect(out).connect(a.destination);
+    src.start(t); lfo.start(t); src.stop(t + dur); lfo.stop(t + dur);
+  }
+  function whoosh() {
+    const a = A(); if (!a) return;
+    const t = a.currentTime, o = a.createOscillator(), g = a.createGain();
+    o.type = "sine"; o.frequency.setValueAtTime(260, t); o.frequency.exponentialRampToValueAtTime(1500, t + 0.25); o.frequency.exponentialRampToValueAtTime(500, t + 0.45);
+    env(g, t, 0.03, 0.12, 0.42); o.connect(g).connect(a.destination); o.start(t); o.stop(t + 0.5);
+  }
+  function haptic(p = 8) { if (S.haptics && navigator.vibrate) { try { navigator.vibrate(p); } catch (e) {} } }
+
+  /* ---------------- layout + scaling ---------------- */
+  function fit() {
+    const w = phone.offsetWidth, h = phone.offsetHeight;
+    scale = Math.min(1, stageWrap.clientWidth / w);
+    phone.style.transform = `scale(${scale})`;
+    stage.style.width = w * scale + "px";
+    stage.style.height = h * scale + "px";
+    placeCatBase();
+  }
+  function placeCatBase() {
+    padW = pad.clientWidth; padH = pad.clientHeight;
+    base = { x: 8, y: padH - CAT_H - 4 };
+    if (!S.zooming) { catXY = { ...base }; applyCatPos(); }
+  }
+  function applyCatPos(extra = "") {
+    catPos.style.transform = `translate(${catXY.x.toFixed(1)}px, ${catXY.y.toFixed(1)}px) ${extra}`;
+  }
+  new ResizeObserver(fit).observe(stageWrap);
+  new ResizeObserver(placeCatBase).observe(pad);
+  addEventListener("resize", fit);
+
+  function setRadio(group, btn) { $$("[role=radio]", group).forEach(b => b.setAttribute("aria-checked", b === btn ? "true" : "false")); }
+  $$("[data-layout]").forEach(b => b.addEventListener("click", () => {
+    setRadio(b.parentElement, b);
+    const wide = b.dataset.layout === "wide";
+    phone.classList.toggle("wide", wide);
+    $("#demo").classList.toggle("duo", wide);
+    fit();
+  }));
+  $$("[data-theme-set]").forEach(b => b.addEventListener("click", () => {
+    setRadio(b.parentElement, b);
+    const v = b.dataset.themeSet;
+    if (v === "auto") document.documentElement.removeAttribute("data-theme");
+    else document.documentElement.setAttribute("data-theme", v);
+  }));
+
+  /* ---------------- switches ---------------- */
+  function setSwitch(el, on) { el.setAttribute("aria-checked", on ? "true" : "false"); }
+  function syncSettings() {
+    $$("[data-set]").forEach(el => setSwitch(el, !!S[el.dataset.set]));
+    setSwitch($("#soundSw"), S.sound);
+    glass.classList.toggle("cat-off", !S.catOn);
+    updateLaserLabel();
+  }
+  $("#soundSw").addEventListener("click", () => { S.sound = !S.sound; syncSettings(); if (S.sound) mrrp(); });
+  $$("[data-set]").forEach(el => el.addEventListener("click", () => {
+    const k = el.dataset.set; S[k] = !S[k];
+    if (k === "catOn" && !S.catOn && S.asleep) wake(true);
+    syncSettings(); if (k === "sound" && S.sound) mrrp();
+  }));
+  $("#playSw").addEventListener("click", () => {
+    S.playing = !S.playing; S.paused = false;
+    setSwitch($("#playSw"), S.playing);
+    screen.classList.toggle("playing", S.playing);
+    $("#tvNp").classList.toggle("on", S.playing);
+    renderPlay();
+    requestAnimationFrame(placeCatBase);
+  });
+
+  /* ---------------- jelly press feel ---------------- */
+  document.addEventListener("pointerdown", e => {
+    const j = e.target.closest(".jelly"); if (!j) return;
+    j.classList.add("down"); pop(+j.dataset.pitch || 520); haptic(j.id === "okBtn" ? 14 : 7);
+  });
+  const release = () => $$(".jelly.down").forEach(j => j.classList.remove("down"));
+  ["pointerup", "pointercancel"].forEach(ev => document.addEventListener(ev, release));
+  document.addEventListener("pointerout", e => { const j = e.target.closest && e.target.closest(".jelly.down"); if (j && !j.contains(e.relatedTarget)) j.classList.remove("down"); });
+  document.addEventListener("keydown", e => { if ((e.key === " " || e.key === "Enter") && e.target.classList && e.target.classList.contains("jelly") && !e.repeat) { e.target.classList.add("down"); pop(+e.target.dataset.pitch || 520); } });
+  document.addEventListener("keyup", release);
+
+  /* ---------------- TV ---------------- */
+  const rows = [0, 1, 2].map(r => $$(`[data-r="${r}"]`, tvScreen));
+  function renderDot() { tvDot.style.left = (S.dot.x / TVW * 100) + "%"; tvDot.style.top = (S.dot.y / TVH * 100) + "%"; }
+  function setFocus(r, c) {
+    S.r = r; S.c = c;
+    $$(".focused", tvScreen).forEach(e => e.classList.remove("focused"));
+    rows[r][c].classList.add("focused");
+    $("#vstrip").setAttribute("aria-valuenow", r);
+    $("#hstrip").setAttribute("aria-valuenow", c);
+  }
+  function moveFocus(dr, dc) {
+    let r = S.r, c = S.c;
+    if (dr) {
+      r = clamp(r + dr, 0, rows.length - 1);
+      if (r !== S.r) { if (rows[S.r].length > 1) S.memC = S.c; c = rows[r].length === 1 ? 0 : Math.min(S.memC, rows[r].length - 1); }
+    }
+    if (dc) { c = clamp(c + dc, 0, rows[r].length - 1); S.memC = c; }
+    tvDot.classList.add("dim");
+    if (r === S.r && c === S.c) { animClass(rows[r][c], dr ? "bump-y" : "bump-x"); return; }
+    setFocus(r, c);
+  }
+  function animClass(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); setTimeout(() => el.classList.remove(cls), 600); }
+  function dotClient() { const R = tvScreen.getBoundingClientRect(); return { x: R.left + S.dot.x / TVW * R.width, y: R.top + S.dot.y / TVH * R.height }; }
+  function hitAtDot() {
+    const p = dotClient();
+    for (let r = 0; r < rows.length; r++) for (let c = 0; c < rows[r].length; c++) {
+      const b = rows[r][c].getBoundingClientRect();
+      if (p.x >= b.left && p.x <= b.right && p.y >= b.top && p.y <= b.bottom) return { r, c, el: rows[r][c] };
+    }
+    return null;
+  }
+  function hoverFocus() { const h = hitAtDot(); if (h && (h.r !== S.r || h.c !== S.c)) setFocus(h.r, h.c); }
+  function tvClick() {
+    const h = hitAtDot();
+    if (h) { setFocus(h.r, h.c); animClass(h.el, "clicked"); if (h.r === 0 && h.c === 0) openSheet(typeSheet); }
+    else {
+      const rp = document.createElement("div"); rp.className = "tv-ripple";
+      rp.style.left = tvDot.style.left; rp.style.top = tvDot.style.top;
+      tvScreen.appendChild(rp); setTimeout(() => rp.remove(), 700);
+    }
+  }
+  let osdT;
+  function osd(text) { tvOsd.textContent = text; tvOsd.classList.add("on"); clearTimeout(osdT); osdT = setTimeout(() => tvOsd.classList.remove("on"), 1100); }
+  function moveDot(dx, dy) {
+    const f = (0.7 + (S.speed - 1) * 0.36) * 1.7;
+    S.dot.x = clamp(S.dot.x + dx * f, 0, TVW);
+    S.dot.y = clamp(S.dot.y + dy * f, 0, TVH);
+    tvDot.classList.remove("dim");
+    renderDot(); hoverFocus();
+  }
+  // laser aim: point at the TV with the mouse/finger (stands in for aiming the phone)
+  tvScreen.addEventListener("pointermove", e => {
+    if (!S.laser) return;
+    const R = tvScreen.getBoundingClientRect();
+    S.dot.x = clamp((e.clientX - R.left) / R.width * TVW, 0, TVW);
+    S.dot.y = clamp((e.clientY - R.top) / R.height * TVH, 0, TVH);
+    tvDot.classList.remove("dim"); renderDot(); hoverFocus(); touch();
+  });
+  tvScreen.addEventListener("pointerdown", e => {
+    if (!S.laser) return;
+    touch(); pop(330); haptic(10); tvClick(); pounce({ x: S.dot.x / TVW * padW, y: S.dot.y / TVH * padH });
+  });
+
+  /* media */
+  function renderPlay() {
+    const paused = S.paused;
+    $("#ppIcon").setAttribute("href", paused ? "#i-play" : "#i-pause");
+    $("#ppBtn").setAttribute("aria-label", paused ? "Play" : "Pause");
+    $("#npIcon").setAttribute("href", paused ? "#i-pause" : "#i-play");
+    $("#npBar").style.setProperty("--p", (S.progress * 100).toFixed(1) + "%");
+    const secs = Math.round(S.progress * 41 * 60); $("#npTime").textContent = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
+  }
+  $("#ppBtn").addEventListener("click", () => { touch(); S.paused = !S.paused; renderPlay(); osd(S.paused ? "Paused" : "Play"); });
+  $("#rewBtn").addEventListener("click", () => { touch(); S.progress = clamp(S.progress - 0.04, 0, 1); renderPlay(); osd("− 10 s"); });
+  $("#fwdBtn").addEventListener("click", () => { touch(); S.progress = clamp(S.progress + 0.04, 0, 1); renderPlay(); osd("+ 10 s"); });
+  setInterval(() => { if (S.playing && !S.paused) { S.progress = (S.progress + 0.0015) % 1; renderPlay(); } }, 1000);
+
+  /* ---------------- cat ---------------- */
+  let sayT;
+  function say(text, ms = 1400) {
+    if (!S.catOn) return;
+    bubble.textContent = text; bubble.classList.add("show");
+    clearTimeout(sayT); sayT = setTimeout(() => bubble.classList.remove("show"), ms);
+  }
+  function flash(cls, ms) { cat.classList.add(cls); setTimeout(() => cat.classList.remove(cls), ms); }
+
+  // gaze
+  let lk = { x: 0, y: 0, r: 0 }, padPt = null, padPtT = 0, hoverPt = null, hoverT = 0, glance = null;
+  function frame() {
+    const now = performance.now();
+    let tgt;
+    if (glance && now < glance.until) tgt = glance.pt;
+    else if (padPt && now - padPtT < 1200) tgt = padPt;
+    else if (hoverPt && now - hoverT < 1500) tgt = hoverPt;
+    else tgt = { x: S.dot.x / TVW * padW, y: S.dot.y / TVH * padH };
+    const ex = catXY.x + CAT_W * 0.5, ey = catXY.y + CAT_H * 0.44;
+    const vx = tgt.x - ex, vy = tgt.y - ey;
+    let tx = clamp(vx / 70, -1, 1) * 2.6, ty = clamp(vy / 70, -1, 1) * 2.4, tr = clamp(vx / 240, -1, 1) * 10;
+    if (S.asleep) { tx = 0; ty = 0; tr = 0; }
+    const k = RM.matches ? 1 : 0.18;
+    lk.x += (tx - lk.x) * k; lk.y += (ty - lk.y) * k; lk.r += (tr - lk.r) * k;
+    look.style.transform = `translate(${lk.x.toFixed(2)}px, ${lk.y.toFixed(2)}px)`;
+    headLook.style.transform = `rotate(${lk.r.toFixed(2)}deg)`;
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  (function blinkLoop() {
+    setTimeout(() => { if (!S.asleep) flash("blink", 140); blinkLoop(); }, 2400 + Math.random() * 3800);
+  })();
+
+  function pounce(p) {
+    if (!S.catOn || S.zooming) return;
+    const cx = catXY.x + CAT_W / 2, cy = catXY.y + CAT_H / 2;
+    let dx = p.x - cx, dy = p.y - cy; const d = Math.hypot(dx, dy) || 1;
+    const reach = Math.min(d * 0.55, 110); dx = dx / d * reach; dy = dy / d * reach;
+    dy = clamp(dy, -catXY.y, 0);
+    dx = clamp(dx, -catXY.x, padW - CAT_W - catXY.x);
+    if (RM.matches) { catAct.animate([{ transform: "scale(1)" }, { transform: "scale(1.08)" }, { transform: "scale(1)" }], { duration: 200 }); return; }
+    catAct.animate([
+      { transform: "translate(0,0) scale(1,1)" },
+      { transform: "translate(0,4px) scale(1.12,.82)", offset: 0.22 },
+      { transform: `translate(${dx * 0.55}px, ${dy * 0.55 - 34}px) scale(.9,1.14) rotate(${dx > 0 ? 8 : -8}deg)`, offset: 0.5 },
+      { transform: `translate(${dx}px, ${dy}px) scale(1.18,.8)`, offset: 0.72 },
+      { transform: `translate(${dx * 0.4}px, ${dy * 0.4}px) scale(.96,1.05)`, offset: 0.86 },
+      { transform: "translate(0,0) scale(1,1)" }
+    ], { duration: 720, easing: "cubic-bezier(.3,.7,.4,1)" });
+  }
+
+  function spawnHearts(n) {
+    for (let i = 0; i < n; i++) {
+      const h = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      h.setAttribute("class", "heart"); h.setAttribute("viewBox", "0 0 24 24");
+      h.innerHTML = '<use href="#i-heart"/>';
+      const x = 26 + Math.random() * 34, y = 6;
+      h.style.left = x + "px"; h.style.top = y + "px";
+      heartsEl.appendChild(h);
+      const drift = (Math.random() - 0.5) * 40;
+      h.animate(RM.matches
+        ? [{ opacity: 0 }, { opacity: 1 }, { opacity: 0 }]
+        : [{ transform: "translate(0,0) scale(.4)", opacity: 0 }, { transform: `translate(${drift * 0.4}px,-18px) scale(1.1)`, opacity: 1, offset: 0.3 }, { transform: `translate(${drift}px,-56px) scale(.8)`, opacity: 0 }],
+        { duration: 1100 + i * 140, delay: i * 120, easing: "cubic-bezier(.2,.7,.3,1)", fill: "both" }).onfinish = () => h.remove();
+    }
+  }
+
+  let purrT;
+  function pet() {
+    if (!S.catOn) return;
+    cat.classList.remove("purr"); void cat.getBoundingClientRect(); cat.classList.add("purr");
+    clearTimeout(purrT); purrT = setTimeout(() => cat.classList.remove("purr"), 1100);
+    spawnHearts(3); purr(); haptic([8, 40, 8, 40, 8]);
+    const now = performance.now();
+    S.pets = S.pets.filter(t => now - t < 6000); S.pets.push(now);
+    if (S.pets.length >= 5) {
+      S.pets = [];
+      setTimeout(() => { flash("slowblink", 1300); say("slow blink = I love you", 2400); }, 1150);
+    } else say(["prrr", "prrrrr…", "more.", "prrrp"][S.pets.length - 1] || "prrr", 1000);
+  }
+  $("#catHit").addEventListener("pointerdown", e => { e.stopPropagation(); });
+  $("#catHit").addEventListener("click", e => { e.stopPropagation(); touch(); pet(); });
+
+  function sleep() {
+    S.asleep = true; cat.classList.add("asleep"); cat.classList.remove("hunt", "alert");
+    updateLaserLabel();
+  }
+  function wake(quiet) {
+    if (!S.asleep) return;
+    S.asleep = false; cat.classList.remove("asleep"); cat.classList.toggle("alert", S.laser);
+    updateLaserLabel();
+    if (quiet) return;
+    say("mrrp?", 1200); mrrp();
+    if (!RM.matches) catAct.animate([{ transform: "scale(1,1)" }, { transform: "scale(1.16,.86)", offset: 0.4 }, { transform: "scale(.96,1.06)", offset: 0.75 }, { transform: "scale(1,1)" }], { duration: 650, easing: "ease-out" });
+  }
+  function touch() { S.lastTouch = performance.now(); if (S.asleep) wake(); }
+  setInterval(() => {
+    if (!S.asleep && S.catOn && !S.zooming && performance.now() - S.lastTouch > NAP_MS) sleep();
+  }, 1000);
+  glass.addEventListener("pointerdown", touch, true);
+  glass.addEventListener("keydown", touch, true);
+
+  function zoomies(dir) {
+    if (S.zooming || !S.catOn) return;
+    whoosh(); haptic([12, 40, 12, 40, 12]);
+    if (RM.matches) { flash("zoom", 900); say("zoomies (imagined)", 1800); return; }
+    S.zooming = true; cat.classList.add("zoom"); cat.classList.remove("hunt");
+    say("!!!", 700);
+    const x0 = base.x, y0 = 8, x1 = padW - CAT_W - 8, y1 = base.y;
+    const w = x1 - x0, h = y1 - y0, P = 2 * (w + h);
+    const pt = s => {
+      s = ((s % P) + P) % P;
+      if (s < w) return { x: x0 + s, y: y1, vx: 1, vy: 0 }; s -= w;
+      if (s < h) return { x: x1, y: y1 - s, vx: 0, vy: -1 }; s -= h;
+      if (s < w) return { x: x1 - s, y: y0, vx: -1, vy: 0 }; s -= w;
+      return { x: x0, y: y0 + s, vx: 0, vy: 1 };
+    };
+    const dur = 2600, laps = 2, t0 = performance.now(); let lastPuff = 0;
+    function step(now) {
+      const u = Math.min(1, (now - t0) / dur);
+      const e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
+      const p = pt(e * P * laps * dir);
+      const vx = p.vx * dir, vy = p.vy * dir;
+      catXY = { x: p.x, y: p.y - Math.abs(Math.sin(now / 42)) * 6 };
+      const lean = vx * 14 + vy * 6 * Math.sin(now / 60);
+      applyCatPos(`rotate(${lean.toFixed(1)}deg)`);
+      if (now - lastPuff > 70 && u > 0.04 && u < 0.96) {
+        lastPuff = now;
+        const pf = document.createElement("div"); pf.className = "puff";
+        pf.style.left = (p.x + CAT_W / 2 - vx * 34) + "px"; pf.style.top = (p.y + CAT_H - 6 - vy * 30) + "px";
+        pad.appendChild(pf);
+        pf.animate([{ transform: "scale(.5)", opacity: 0.4 }, { transform: `scale(1.6) translate(${-vx * 8}px,-6px)`, opacity: 0 }], { duration: 520, easing: "ease-out" }).onfinish = () => pf.remove();
+      }
+      if (u < 1) return requestAnimationFrame(step);
+      S.zooming = false; catXY = { ...base }; applyCatPos(); cat.classList.remove("zoom");
+      catAct.animate([{ transform: "scale(1.25,.75)" }, { transform: "scale(.94,1.08)", offset: 0.5 }, { transform: "scale(1,1)" }], { duration: 480, easing: "ease-out" });
+      setTimeout(() => say("(totally normal)", 1800), 300);
+    }
+    requestAnimationFrame(step);
+  }
+
+  /* ---------------- touchpad ---------------- */
+  const ptrs = new Map(); let g = null, lpTimer = 0, lastFlick = 0, dotHideT;
+  function local(e) { const r = pad.getBoundingClientRect(); return { x: (e.clientX - r.left) / scale, y: (e.clientY - r.top) / scale }; }
+  function setPadDot(p, on) {
+    padDot.style.transform = `translate(${p.x}px, ${p.y}px)`;
+    padDot.classList.toggle("on", on);
+    padPt = p; padPtT = performance.now();
+  }
+  function endGesture() {
+    g = null; cat.classList.remove("hunt");
+    clearTimeout(dotHideT); dotHideT = setTimeout(() => padDot.classList.remove("on"), 380);
+  }
+  function longPress() {
+    osd("Long press"); haptic([20]); pop(260);
+    padDot.classList.remove("ring"); void padDot.offsetWidth; padDot.classList.add("ring");
+    if (S.catOn) { flash("knead", 1300); say("…making biscuits", 1300); }
+  }
+  function click(p) { tvClick(); pounce(p); haptic(10); }
+
+  pad.addEventListener("pointerdown", e => {
+    if (e.button === 2) return;
+    try { pad.setPointerCapture(e.pointerId); } catch (_) {}
+    pad.classList.add("used");
+    const p = local(e), now = performance.now();
+    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (ptrs.size === 1) {
+      g = { t0: now, moved: 0, multi: false, long: false, last: { ...p, t: now }, lastAng: null, turns: [] };
+      clearTimeout(lpTimer);
+      lpTimer = setTimeout(() => { if (g && g.moved < 8 && !g.multi) { g.long = true; longPress(); } }, 520);
+      setPadDot(p, true);
+    } else if (g) { g.multi = true; clearTimeout(lpTimer); }
+  });
+  pad.addEventListener("pointermove", e => {
+    const pr = ptrs.get(e.pointerId);
+    const p = local(e);
+    if (!pr) { if (e.pointerType === "mouse") { hoverPt = p; hoverT = performance.now(); } return; }
+    if (!g) return;
+    const dx = (e.clientX - pr.x) / scale, dy = (e.clientY - pr.y) / scale;
+    pr.x = e.clientX; pr.y = e.clientY;
+    g.moved += Math.hypot(dx, dy);
+    if (g.multi) return;
+    if (g.moved > 8) { clearTimeout(lpTimer); if (S.catOn && !S.zooming) cat.classList.add("hunt"); }
+    if (g.moved > 3 && !g.long) moveDot(dx, dy);
+    setPadDot(p, true);
+    // circle + flick detection
+    const now = performance.now(), L = g.last, seg = Math.hypot(p.x - L.x, p.y - L.y);
+    if (seg >= 6) {
+      const ang = Math.atan2(p.y - L.y, p.x - L.x);
+      if (g.lastAng !== null) {
+        let d = ang - g.lastAng; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
+        g.turns.push({ d, t: now, len: seg });
+      }
+      g.lastAng = ang;
+      const v = seg / Math.max(1, now - L.t);
+      g.last = { ...p, t: now };
+      g.turns = g.turns.filter(o => now - o.t < 1100);
+      const sum = g.turns.reduce((a, o) => a + o.d, 0), len = g.turns.reduce((a, o) => a + o.len, 0);
+      if (Math.abs(sum) > Math.PI * 1.85 && len > 320) { g.turns = []; zoomies(sum > 0 ? 1 : -1); }
+      else if (v > 2.6 && now - lastFlick > 900 && S.catOn && !S.zooming) { lastFlick = now; flash("startle", 450); }
+    }
+  });
+  pad.addEventListener("pointerup", e => {
+    if (!ptrs.has(e.pointerId)) return;
+    ptrs.delete(e.pointerId);
+    if (!g) return;
+    const now = performance.now();
+    if (g.multi) {
+      if (ptrs.size === 0) { if (now - g.t0 < 380 && g.moved < 30) back(); endGesture(); }
+      return;
+    }
+    clearTimeout(lpTimer);
+    if (!g.long && g.moved < 8 && now - g.t0 < 320) click(local(e));
+    endGesture();
+  });
+  pad.addEventListener("pointercancel", e => { ptrs.delete(e.pointerId); clearTimeout(lpTimer); if (ptrs.size === 0) endGesture(); });
+  pad.addEventListener("pointerleave", () => { hoverPt = null; });
+  pad.addEventListener("contextmenu", e => { e.preventDefault(); touch(); back(); });
+  pad.addEventListener("keydown", e => {
+    const k = e.key, st = 36;
+    const m = { ArrowLeft: [-st, 0], ArrowRight: [st, 0], ArrowUp: [0, -st], ArrowDown: [0, st] }[k];
+    if (m) { e.preventDefault(); moveDot(m[0], m[1]); setPadDot({ x: clamp(S.dot.x / TVW * padW, 10, padW - 10), y: clamp(S.dot.y / TVH * padH, 10, padH - 10) }, true); clearTimeout(dotHideT); dotHideT = setTimeout(() => padDot.classList.remove("on"), 800); }
+    else if (k === "Enter" || k === " ") { e.preventDefault(); pop(330); click({ x: padW / 2, y: padH / 2 }); }
+    else if (k === "Backspace" || k === "Escape") { e.preventDefault(); back(); }
+  });
+
+  /* ---------------- strips ---------------- */
+  function strip(el, axis) {
+    const STEP = 26; let st = null, off = 0;
+    el.addEventListener("pointerdown", e => {
+      try { el.setPointerCapture(e.pointerId); } catch (_) {}
+      st = { last: axis === "y" ? e.clientY : e.clientX, acc: 0 };
+      el.classList.add("active");
+    });
+    el.addEventListener("pointermove", e => {
+      if (!st) return;
+      const v = axis === "y" ? e.clientY : e.clientX, d = (v - st.last) / scale;
+      st.last = v; st.acc += d; off += d;
+      el.style.setProperty("--off", off.toFixed(1) + "px");
+      while (Math.abs(st.acc) >= STEP) { const dir = Math.sign(st.acc); st.acc -= dir * STEP; stepFocus(axis, dir); }
+    });
+    const end = () => { st = null; el.classList.remove("active"); };
+    el.addEventListener("pointerup", end); el.addEventListener("pointercancel", end);
+    el.addEventListener("keydown", e => {
+      const dir = axis === "y" ? { ArrowUp: -1, ArrowDown: 1 }[e.key] : { ArrowLeft: -1, ArrowRight: 1 }[e.key];
+      if (dir) { e.preventDefault(); off += dir * STEP; el.style.setProperty("--off", off + "px"); stepFocus(axis, dir); }
+    });
+  }
+  function stepFocus(axis, dir) {
+    tick(); haptic(5);
+    if (axis === "y") moveFocus(dir, 0); else moveFocus(0, dir);
+    const cx = catXY.x + CAT_W / 2, cy = catXY.y + CAT_H / 2;
+    glance = { pt: { x: cx + (axis === "x" ? dir * 240 : 0), y: cy + (axis === "y" ? dir * 240 : -40) }, until: performance.now() + 450 };
+  }
+  strip($("#vstrip"), "y"); strip($("#hstrip"), "x");
+
+  /* ---------------- buttons ---------------- */
+  const tvSearch = $("#tvSearch"), typeInput = $("#typeInput");
+  function clearSearch() { typeInput.value = ""; tvSearch.textContent = "Search"; $(".tv-search").classList.remove("typing"); S.meowed = false; }
+  function back() { osd("Back"); haptic(10); if (curSheet) closeSheet(); else if (typeInput.value) clearSearch(); }
+  $("#backBtn").addEventListener("click", back);
+  $("#homeBtn").addEventListener("click", () => { osd("Home"); clearSearch(); setFocus(1, 0); S.memC = 0; });
+  $("#okBtn").addEventListener("click", () => {
+    const el = rows[S.r][S.c]; animClass(el, "clicked");
+    if (S.r === 0 && S.c === 0) openSheet(typeSheet);
+    pounce({ x: padW * 0.5, y: padH * 0.35 });
+  });
+  $("#recBtn").addEventListener("click", () => {
+    S.dot = { x: 800, y: 450 }; tvDot.classList.add("glide"); tvDot.classList.remove("dim"); renderDot();
+    setTimeout(() => { tvDot.classList.remove("glide"); hoverFocus(); }, 480);
+    osd("Recentered");
+    const cx = catXY.x + CAT_W / 2;
+    glance = { pt: { x: cx + 200, y: base.y }, until: performance.now() + 180 };
+    setTimeout(() => { glance = { pt: { x: cx - 200, y: base.y }, until: performance.now() + 180 }; }, 180);
+  });
+  function updateLaserLabel() {
+    const napping = S.asleep && S.catOn;
+    laserLbl.textContent = napping ? "Laser (cat napping)" : "Laser";
+    laserState.textContent = S.laser ? "on" : "off";
+    laserBtn.setAttribute("aria-label", `${napping ? "Laser (cat napping)" : "Laser"}, ${S.laser ? "on" : "off"}`);
+  }
+  laserBtn.addEventListener("click", () => {
+    S.laser = !S.laser;
+    laserBtn.setAttribute("aria-pressed", S.laser ? "true" : "false");
+    phone.classList.toggle("laser-on", S.laser);
+    tvScreen.classList.toggle("laser-on", S.laser);
+    cat.classList.toggle("alert", S.laser && !S.asleep);
+    $("#tvHint").textContent = S.laser ? "laser on: aim here" : "mock screen";
+    updateLaserLabel(); osd(S.laser ? "Laser on" : "Laser off");
+    if (S.laser) say("!", 700);
+  });
+
+  /* sheets */
+  const scrim = $("#scrim"), typeSheet = $("#typeSheet"), setSheet = $("#setSheet");
+  let curSheet = null, sheetOpener = null;
+  function openSheet(sh) {
+    if (curSheet) closeSheet(true);
+    curSheet = sh; sheetOpener = document.activeElement;
+    sh.inert = false; sh.classList.add("on"); scrim.classList.add("on");
+    if (sh === typeSheet) setTimeout(() => typeInput.focus({ preventScroll: true }), 80);
+    else setTimeout(() => $("[data-set]", sh).focus({ preventScroll: true }), 80);
+  }
+  function closeSheet(silent) {
+    if (!curSheet) return;
+    curSheet.classList.remove("on"); curSheet.inert = true; scrim.classList.remove("on");
+    curSheet = null;
+    if (!silent && sheetOpener && sheetOpener.focus) sheetOpener.focus({ preventScroll: true });
+  }
+  $("#typeBtn").addEventListener("click", () => openSheet(typeSheet));
+  $("#gearBtn").addEventListener("click", () => openSheet(setSheet));
+  $("#typeDone").addEventListener("click", () => closeSheet());
+  $("#setDone").addEventListener("click", () => closeSheet());
+  $("#typeClear").addEventListener("click", () => { clearSearch(); typeInput.focus({ preventScroll: true }); });
+  scrim.addEventListener("click", () => closeSheet());
+  typeInput.addEventListener("keydown", e => { if (e.key === "Enter") closeSheet(); });
+  typeInput.addEventListener("input", () => {
+    const v = typeInput.value;
+    tvSearch.textContent = v || "Search";
+    $(".tv-search").classList.toggle("typing", !!v);
+    setFocus(0, 0);
+    const has = /meow/i.test(v);
+    if (has && !S.meowed) { S.meowed = true; meowEgg(); }
+    if (!has) S.meowed = false;
+  });
+  let catModeT;
+  function meowEgg() {
+    meow(); haptic([10, 60, 10]);
+    if (S.catOn) { say("meow!", 1800); pounce({ x: padW * 0.6, y: padH * 0.3 }); }
+    tvEl.classList.add("catmode"); osd("Cat mode");
+    clearTimeout(catModeT); catModeT = setTimeout(() => tvEl.classList.remove("catmode"), 10000);
+  }
+
+  /* TV menu */
+  const tvBtn = $("#tvBtn"), tvMenu = $("#tvMenu"), sub = $("#sub"), statusDot = $("#statusDot");
+  const SUB = "Connected to GoogleTV5387"; let subT;
+  function flashSub(text, ms = 2200) { sub.textContent = text; clearTimeout(subT); subT = setTimeout(() => { sub.textContent = SUB; statusDot.classList.remove("scan"); }, ms); }
+  function menu(open) {
+    tvMenu.hidden = !open; tvBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    if (open) $("button", tvMenu).focus({ preventScroll: true });
+  }
+  tvBtn.addEventListener("click", e => { e.stopPropagation(); menu(tvMenu.hidden); pop(500); });
+  tvMenu.addEventListener("click", e => {
+    const b = e.target.closest("[data-tv]"); if (!b) return;
+    const k = b.dataset.tv; menu(false); tvBtn.focus({ preventScroll: true });
+    if (k === "bed") flashSub("Bedroom TV is offline");
+    if (k === "box") { flashSub("Cardboard Box is occupied by Biscuit", 2600); say("occupied.", 1800); haptic([10, 40, 10]); }
+    if (k === "scan") { statusDot.classList.add("scan"); sub.textContent = "Scanning…"; clearTimeout(subT); subT = setTimeout(() => flashSub("Found 1 TV, 1 box", 1600), 1200); }
+  });
+  document.addEventListener("click", e => { if (!tvMenu.hidden && !tvMenu.contains(e.target)) menu(false); });
+  document.addEventListener("keydown", e => {
+    if (e.key !== "Escape") return;
+    if (!tvMenu.hidden) { menu(false); tvBtn.focus({ preventScroll: true }); }
+    else if (curSheet) closeSheet();
+  });
+
+  /* speed slider */
+  const speed = $("#speed");
+  function renderSpeed() {
+    S.speed = +speed.value;
+    speed.style.setProperty("--pct", ((S.speed - 1) / 9 * 100).toFixed(1) + "%");
+    speed.setAttribute("aria-valuetext", `Speed ${S.speed} of 10`);
+  }
+  speed.addEventListener("input", () => { renderSpeed(); tick(); haptic(4); });
+  renderSpeed();
+
+  /* init */
+  renderDot(); setFocus(1, 0); renderPlay(); syncSettings(); fit();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+})();
+</script>
+</body>
+</html>

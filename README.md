@@ -35,6 +35,10 @@ driving display glasses. It needs no root and works with stock Google TV.
   Backspace and **Delete** remove characters; **Done** presses Enter.
 - **Back / Home**, and **Rewind / Play-Pause / Forward** while something is playing.
 - **Several TVs**: every TV running the TV app shows up in the menu at the top of the phone app.
+- **Themes** (gear → Theme): **Toy Remote** (molded plastic, rubber keys, a click knob, thumbwheels),
+  **Chaos Zine** (torn riso stickers, scribbles, doodle bursts) and **Plain**. Each theme hides a few
+  easter eggs. Themes are skins in `ios/Sources/*Skin.swift` implementing `RemoteSkin`
+  (`ios/Sources/Theme.swift`); the HTML prototypes they came from are in `design/remixes/`.
 - **Wide screens**: on an unfolded iPhone Duo or in landscape, the pad takes the left side for the
   left thumb and every button moves to a right-hand column, with OK largest and lowest.
 

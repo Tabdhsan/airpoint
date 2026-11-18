@@ -3,6 +3,8 @@ __pycache__/
 android/build/
 ios/*.xcodeproj/
 ios/build-sim/
+ios/build-toy/
+ios/build-zine/
 ios/build/
 ios/Identity/
 ios/Local.xcconfig
