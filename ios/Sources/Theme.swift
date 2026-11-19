@@ -75,18 +75,61 @@ final class SkinFX: ObservableObject {
         case click                            // pad tap or OK
         case longPress
         case step(dx: Int, dy: Int)           // D-pad step from a strip or two-finger scroll
+        case stripUp                          // finger lifted off a scroll strip (ends a swipe of steps)
         case button(id: String)               // any themed button pressed
         case connected(Bool)
     }
     @Published private(set) var last: Event = .padUp
     @Published private(set) var count = 0
-    /// Total clicks this session (for "after N clicks" eggs).
-    @Published private(set) var clicks = 0
 
     func emit(_ e: Event) {
         last = e
         count &+= 1
-        if e == .click { clicks += 1 }
+    }
+}
+
+/// Whole-screen moves a skin can ask for. ContentView applies them to the layout and effects
+/// (not the backdrop, so the screen edges stay covered).
+final class ScreenFX: ObservableObject {
+    static let shared = ScreenFX()
+    @Published private(set) var rolls = 0
+    func barrelRoll() { rolls &+= 1 }
+}
+
+private struct RollPose {
+    var angle = 0.0    // spin in the screen plane, degrees
+    var tilt = 0.0     // 3D lean while spinning, degrees
+    var scale = 1.0
+}
+
+/// Two full turns: shrink, spin with a 3D lean, then land with a little bounce.
+/// Reduce Motion: nothing moves.
+struct BarrelRoll: ViewModifier {
+    @ObservedObject private var screen = ScreenFX.shared
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        content.keyframeAnimator(initialValue: RollPose(), trigger: reduceMotion ? 0 : screen.rolls) { view, p in
+            view
+                .rotation3DEffect(.degrees(p.tilt), axis: (x: 1, y: 0.4, z: 0), perspective: 0.6)
+                .rotationEffect(.degrees(p.angle))
+                .scaleEffect(p.scale)
+        } keyframes: { _ in
+            KeyframeTrack(\.scale) {
+                CubicKeyframe(0.62, duration: 0.3)
+                LinearKeyframe(0.62, duration: 0.9)
+                SpringKeyframe(1, duration: 0.6, spring: .bouncy)
+            }
+            KeyframeTrack(\.angle) {
+                LinearKeyframe(0, duration: 0.1)
+                CubicKeyframe(720, duration: 1.2)
+            }
+            KeyframeTrack(\.tilt) {
+                CubicKeyframe(35, duration: 0.5)
+                CubicKeyframe(-25, duration: 0.5)
+                SpringKeyframe(0, duration: 0.6, spring: .bouncy)
+            }
+        }
     }
 }
 

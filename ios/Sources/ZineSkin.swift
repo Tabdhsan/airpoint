@@ -1,4 +1,3 @@
-import Combine
 import SwiftUI
 import UIKit
 
@@ -10,10 +9,8 @@ import UIKit
 // and Reduce Motion turns off tilt, wobble and bursts while keeping the colours.
 //
 // Easter eggs (state lives in `ZineState.shared`):
-//  - CHAOS MODE: scribble left-right hard on the pad (6+ direction reversals within 1s).
-//  - Unhinged status: tap the status line repeatedly; it escalates, then calms down by itself.
-//  - Bad registration: tap the status dot 5 times quickly; the ink layers slide out of register.
-//  - Clicky: after 100 clicks a critter moves into the corner between the strips.
+//  - Falls apart: long-press the status dot. Every sticker drops with gravity, bounces on the bottom of
+//    the screen, then springs back into place. Reduce Motion swaps this for a quick fade.
 
 struct ZineSkin: RemoteSkin {
     var colorScheme: ColorScheme? { nil }
@@ -144,85 +141,108 @@ private struct ZHalftone: View {
 private final class ZineState: ObservableObject {
     static let shared = ZineState()
 
-    @Published private(set) var chaos = false
-    @Published private(set) var shuffle = 0
-    @Published private(set) var misreg = false
-    /// Fires on each chaos tick so the effects layer can drop confetti.
-    let confetti = PassthroughSubject<Int, Never>()
-    /// Burst requests in global coordinates.
-    let burstAt = PassthroughSubject<CGPoint, Never>()
+    /// When the current fall-apart started; nil when everything is in place.
+    @Published private(set) var fallStart: Date?
+    /// Whether the current fall is the Reduce Motion version (a fade, nothing moves).
+    private(set) var fallCalm = false
 
     // Bookkeeping (not published; read when an event arrives).
     var lastPadPoint: CGPoint?
     var lastPadDown = Date.distantPast
     var lastStrip: (vertical: Bool, at: Date)?
     var lastButton: (id: String, at: Date)?
-    var reduceMotion = false
 
-    private var reversals: [TimeInterval] = []
-    private var lastSign: CGFloat = 0
-    private var chaosTimer: Timer?
-    private var chaosEnd: DispatchWorkItem?
-    private var misregEnd: DispatchWorkItem?
-    private var dotTaps: [Date] = []
-
-    /// Counts direction reversals of pad strokes; 6 within a second sets off CHAOS MODE.
-    func noteMove(dx: CGFloat) {
-        guard abs(dx) >= 3 else { return }
-        let sign: CGFloat = dx > 0 ? 1 : -1
-        let now = CACurrentMediaTime()
-        if lastSign != 0 && sign != lastSign {
-            reversals.append(now)
-            reversals.removeAll { now - $0 > 1 }
-            if reversals.count >= 6 {
-                reversals = []
-                startChaos()
-            }
-        }
-        lastSign = sign
-    }
-
-    func startChaos() {
-        guard !chaos else { return }
-        chaos = true
-        shuffle &+= 1
-        UINotificationFeedbackGenerator().notificationOccurred(.success)
-        var n = 0
-        chaosTimer?.invalidate()
-        if !reduceMotion {
-            chaosTimer = Timer.scheduledTimer(withTimeInterval: 0.32, repeats: true) { [weak self] _ in
-                guard let self else { return }
-                n += 1
-                if n % 2 == 0 { self.shuffle &+= 1 }
-                self.confetti.send(n)
-            }
-        }
-        chaosEnd?.cancel()
-        let end = DispatchWorkItem { [weak self] in self?.endChaos() }
-        chaosEnd = end
-        DispatchQueue.main.asyncAfter(deadline: .now() + 6, execute: end)
-    }
-
-    func endChaos() {
-        chaosTimer?.invalidate()
-        chaosTimer = nil
-        chaos = false
-    }
-
-    /// Five quick taps on the status dot slide the ink layers out of register.
-    func tapDot() {
-        let now = Date()
-        dotTaps = dotTaps.filter { now.timeIntervalSince($0) < 2.2 } + [now]
-        Haptics.tick()
-        guard dotTaps.count >= 5 else { return }
-        dotTaps = []
-        misreg = true
+    /// Long-press on the status dot: everything falls off the page and springs back.
+    func fallApart(calm: Bool) {
+        guard fallStart == nil else { return }
+        fallCalm = calm
+        fallStart = Date()
         UINotificationFeedbackGenerator().notificationOccurred(.warning)
-        misregEnd?.cancel()
-        let end = DispatchWorkItem { [weak self] in self?.misreg = false }
-        misregEnd = end
-        DispatchQueue.main.asyncAfter(deadline: .now() + 9, execute: end)
+        let total = calm ? ZFall.calmDuration : ZFall.duration
+        if !calm {
+            for t in [0.45, 0.75, ZFall.drop + ZFall.back * 0.6] {
+                DispatchQueue.main.asyncAfter(deadline: .now() + t) { Haptics.tap(.light) }
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + total) { [weak self] in
+            self?.fallStart = nil
+            if !calm { Haptics.tap(.rigid) }
+        }
     }
+}
+
+// MARK: - Falls apart
+
+/// Timing and physics for the status-dot long-press egg (from the HTML prototype, per 60 fps frame).
+private enum ZFall {
+    /// Seconds of falling and bouncing before everything springs back.
+    static let drop: TimeInterval = 1.7
+    /// Seconds each piece takes to spring back.
+    static let back: TimeInterval = 0.75
+    /// Extra delay per piece on the way back, so they return one after another.
+    static let stagger: TimeInterval = 0.018
+    static let maxOrder = 12
+    static let duration = drop + back + stagger * Double(maxOrder) + 0.05
+    static let calmDuration: TimeInterval = 0.7
+
+    /// Offset and rotation of a piece `t` seconds into the fall.
+    static func pose(t: TimeInterval, seed: UInt64, floor: CGFloat) -> (CGSize, Double) {
+        var g = ZRNG(seed &+ 0xFA11)
+        let vx0 = g.range(-2.5, 2.5), vy0 = g.range(-7, -2), va0 = g.range(-7, 7)
+        let order = Int(seed % UInt64(maxOrder))
+        func simulate(frames: Int) -> (CGFloat, CGFloat, CGFloat) {
+            var x: CGFloat = 0, y: CGFloat = 0, a: CGFloat = 0
+            var vx = vx0, vy = vy0, va = va0
+            for _ in 0..<frames {
+                vy += 0.85; x += vx; y += vy; a += va
+                if y > floor { y = floor; vy *= -0.4; va *= 0.55; vx *= 0.7 }
+            }
+            return (x, y, a)
+        }
+        if t < drop {
+            let (x, y, a) = simulate(frames: Int(t * 60))
+            return (CGSize(width: x, height: y), Double(a))
+        }
+        let (x, y, a) = simulate(frames: Int(drop * 60))
+        let u = min(1, max(0, (t - drop - stagger * Double(order)) / back))
+        // Overshooting ease-out, like the prototype's cubic-bezier(.34, 1.56, .64, 1).
+        let c1 = 1.70158, c3 = c1 + 1
+        let k = CGFloat(1 + c3 * pow(u - 1, 3) + c1 * pow(u - 1, 2))
+        return (CGSize(width: x * (1 - k), height: y * (1 - k)), Double(a * (1 - k)))
+    }
+}
+
+/// Lets a piece fall during the egg. Visual only: layout doesn't move, and the piece ignores
+/// touches while it's off the page.
+private struct ZFallModifier: ViewModifier {
+    let seed: UInt64
+    @ObservedObject private var zs = ZineState.shared
+    /// This piece's bottom edge in global coordinates.
+    @State private var bottom: CGFloat = 0
+
+    func body(content: Content) -> some View {
+        let start = zs.fallStart
+        TimelineView(.animation(minimumInterval: nil, paused: start == nil)) { tl in
+            let t = start.map { tl.date.timeIntervalSince($0) } ?? -1
+            // Bounce on the bottom of the screen (the effects layer's frame).
+            let screen = ZFrames.shared.screen
+            let floor = screen == .zero ? 300 : max(0, screen.maxY - bottom - 4)
+            let falling = start != nil && !zs.fallCalm && t < ZFall.duration
+            let (off, rot) = falling ? ZFall.pose(t: t, seed: seed, floor: floor) : (CGSize.zero, 0.0)
+            let fade = start != nil && zs.fallCalm && t < ZFall.calmDuration
+                ? 1 - 0.75 * sin(.pi * t / ZFall.calmDuration) : 1
+            content
+                .rotationEffect(.degrees(rot))
+                .offset(off)
+                .opacity(fade)
+        }
+        .allowsHitTesting(start == nil)
+        .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxY } action: { bottom = $0 }
+    }
+}
+
+private extension View {
+    func zFall(_ seed: UInt64) -> some View { modifier(ZFallModifier(seed: seed)) }
 }
 
 /// Global frames of surfaces the effects layer anchors to.
@@ -232,6 +252,8 @@ private final class ZFrames: ObservableObject {
     @Published var vstrip: CGRect = .zero
     @Published var hstrip: CGRect = .zero
     @Published var ok: CGRect = .zero
+    /// The full-screen effects layer (not published: read while pieces fall).
+    var screen: CGRect = .zero
 
     func set(_ key: ReferenceWritableKeyPath<ZFrames, CGRect>, _ r: CGRect) {
         if self[keyPath: key] != r { self[keyPath: key] = r }
@@ -472,7 +494,7 @@ private let zNotes: [String: String] = [
     "ok": "(the big one)", "rewind": "rew", "playpause": "play/pause", "forward": "ffwd",
 ]
 
-private func zLook(_ b: SkinButton, chaos: Bool, shuffle: Int) -> ZLook {
+private func zLook(_ b: SkinButton) -> ZLook {
     let seed = zSeed(b.id)
     var g = ZRNG(seed)
     let isOK = b.role == .ok
@@ -481,30 +503,22 @@ private func zLook(_ b: SkinButton, chaos: Bool, shuffle: Int) -> ZLook {
                      corner: Int(g.next() % 4), tearSeed: seed)
     if case .toggle(let on) = b.role, !on { look.ink = nil }
     if !b.enabled { look.ink = nil }
-    if chaos {
-        var c = ZRNG(seed &+ UInt64(shuffle) &* 7919)
-        look.ink = ZInkKey(rawValue: Int(c.next() % 6))
-        look.tilt = Double(c.range(isOK ? -4 : -8, isOK ? 4 : 8))
-        look.corner = Int(c.next() % 4)
-        look.tearSeed = c.next()
-    }
     return look
 }
 
 private struct ZStickerFace: View {
     let b: SkinButton
     let pressed: Bool
-    @ObservedObject private var zs = ZineState.shared
     @Environment(\.accessibilityReduceMotion) private var calm
     @State private var width: CGFloat = 200
 
     var body: some View {
-        let look = zLook(b, chaos: zs.chaos, shuffle: zs.shuffle)
+        let look = zLook(b)
         let torn = ZTorn(seed: look.tearSeed, corner: look.corner)
         let fill = look.ink?.fill ?? ZInk.pad
         let ghost = look.ink?.ghost ?? ZInk.pink
         let text = look.ink?.text ?? ZInk.ink
-        let ghostShift: CGSize = zs.misreg ? CGSize(width: 8, height: 6) : (calm ? CGSize(width: 2, height: 1.5) : CGSize(width: 3, height: 2))
+        let ghostShift = calm ? CGSize(width: 2, height: 1.5) : CGSize(width: 3, height: 2)
         let wobble: Double = (look.tearSeed % 2 == 0 ? 2.6 : -2.6)
         let squash = pressed && !calm
 
@@ -528,12 +542,12 @@ private struct ZStickerFace: View {
         .scaleEffect(x: squash ? 0.95 : 1, y: squash ? 0.88 : 1)
         .offset(calm && pressed ? CGSize(width: 1, height: 2) : .zero)
         .animation(calm ? nil : .spring(response: 0.24, dampingFraction: 0.38), value: pressed)
-        .animation(calm ? nil : .spring(response: 0.35, dampingFraction: 0.55), value: zs.shuffle)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { r in
             width = r.width
             if b.id == "ok" { ZFrames.shared.set(\.ok, r) }
         }
+        .zFall(zSeed(b.id))
     }
 
     @ViewBuilder private func content(text: Color, ghost: Color) -> some View {
@@ -619,13 +633,12 @@ private struct ZStickerFace: View {
 
 private struct ZGear: View {
     let pressed: Bool
-    @ObservedObject private var zs = ZineState.shared
     @Environment(\.accessibilityReduceMotion) private var calm
 
     var body: some View {
         let blob = ZBlob(seed: 3, wobble: 0.05)
         ZStack {
-            blob.fill(ZInk.pink).opacity(0.6).offset(zs.misreg ? CGSize(width: 7, height: 5) : CGSize(width: 3, height: 2))
+            blob.fill(ZInk.pink).opacity(0.6).offset(CGSize(width: 3, height: 2))
             blob.fill(ZInk.pad).overlay(ZHalftone().clipShape(blob))
             Image(systemName: "gearshape")
                 .font(.system(size: 23, weight: .bold))
@@ -638,6 +651,7 @@ private struct ZGear: View {
         .scaleEffect(pressed && !calm ? 1.12 : 1)
         .animation(calm ? nil : (pressed ? .easeIn(duration: 0.5) : .spring(response: 0.45, dampingFraction: 0.5)), value: pressed)
         .padding(2)
+        .zFall(3)
     }
 }
 
@@ -646,6 +660,7 @@ private struct ZGear: View {
 private struct ZDot: View {
     let connected: Bool
     @Environment(\.accessibilityReduceMotion) private var calm
+    @State private var holding = false
 
     var body: some View {
         ZStack {
@@ -659,8 +674,14 @@ private struct ZDot: View {
             light
         }
         .frame(width: 40, height: 40)
+        .scaleEffect(holding && !calm ? 1.25 : 1)
+        .animation(calm ? nil : (holding ? .easeIn(duration: 0.6) : .spring(response: 0.3, dampingFraction: 0.5)), value: holding)
+        .zFall(11)
         .contentShape(Rectangle())
-        .onTapGesture { ZineState.shared.tapDot() }
+        .onLongPressGesture(minimumDuration: 0.6) {
+            holding = false
+            ZineState.shared.fallApart(calm: calm)
+        } onPressingChanged: { holding = $0 }
         .accessibilityLabel(connected ? "Connected" : "Not connected")
     }
 
@@ -676,68 +697,14 @@ private struct ZDot: View {
 
 private struct ZSubtitle: View {
     let status: String
-    @State private var level = -1
-    @State private var wiggle = 0.0
-    @State private var reset: DispatchWorkItem?
-    @Environment(\.accessibilityReduceMotion) private var calm
-
-    private var lines: [String] {
-        if status.hasPrefix("Connected") {
-            return ["Connected. Very connected.", "Connected-er than ever", "the TV can hear you", "the TV is ignoring you",
-                    "I have become the remote", "REMOTE? I AM THE CONTROLLER", "everything is a pointer",
-                    "the pointer is pointing at ME", "ok ok. breathing. connected."]
-        }
-        return ["still looking. squinting.", "TV? TV?? hello??", "checking under the couch", "the TV is hiding from you",
-                "maybe it's behind the plant", "I HAVE BECOME THE SEARCH", "everything is a TV if you squint",
-                "the TV is looking for ME", "ok ok. breathing. searching."]
-    }
-
-    private var lineColor: Color {
-        switch level / 2 + 1 {
-        case 1: return ZInk.ink
-        case 2: return ZInk.blueText
-        case 3: return ZInk.violetText
-        case 4: return ZInk.orangeText
-        default: return ZInk.pinkText
-        }
-    }
 
     var body: some View {
-        Group {
-            if level < 0 {
-                Text(status).font(.custom(ZFont.mono, size: 12, relativeTo: .caption)).foregroundStyle(ZInk.inkSoft)
-            } else {
-                Text(lines[level]).font(ZFont.hand(14)).foregroundStyle(lineColor)
-            }
-        }
-        .lineLimit(1)
-        .frame(minHeight: 20, alignment: .leading)
-        .rotationEffect(.degrees(wiggle), anchor: .leading)
-        .contentShape(Rectangle())
-        .onTapGesture(coordinateSpace: .global) { loc in advance(loc) }
-        .accessibilityAddTraits(.isButton)
-        .accessibilityHint("Tap for nonsense")
-    }
-
-    private func advance(_ loc: CGPoint) {
-        Haptics.tick()
-        level += 1
-        if level >= lines.count { level = -1; reset?.cancel(); return }
-        if !calm {
-            let angle = (level % 2 == 0 ? -3.0 : 3.0) * (1 + Double(level) * 0.3)
-            withAnimation(.spring(response: 0.15, dampingFraction: 0.5)) { wiggle = angle }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.45)) { wiggle = 0 }
-            }
-        }
-        if level == lines.count - 1 {
-            ZineState.shared.burstAt.send(loc)
-            UINotificationFeedbackGenerator().notificationOccurred(.success)
-        }
-        reset?.cancel()
-        let work = DispatchWorkItem { level = -1 }
-        reset = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5, execute: work)
+        Text(status)
+            .font(.custom(ZFont.mono, size: 12, relativeTo: .caption))
+            .foregroundStyle(ZInk.inkSoft)
+            .lineLimit(1)
+            .frame(minHeight: 20, alignment: .leading)
+            .zFall(5)
     }
 }
 
@@ -761,6 +728,7 @@ private struct ZSpeed: View {
             end("hare.fill", "zoomy")
         }
         .frame(minHeight: 54)
+        .zFall(7)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Pointer speed")
         .accessibilityValue(String(format: "%.1f times", value))
@@ -861,6 +829,7 @@ private struct ZStripView: View {
         .saturation(s.touching ? 1.3 : 1)
         .brightness(s.touching ? 0.06 : 0)
         .rotationEffect(.degrees(calm ? 0 : (vertical ? 0.8 : -0.5)))
+        .zFall(vertical ? 101 : 202)
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { r in
             ZFrames.shared.set(vertical ? \ZFrames.vstrip : \ZFrames.hstrip, r)
         }
@@ -917,14 +886,14 @@ private enum ZQuips {
     static let type = ["typing mode ✎", "spell it out"]
     static let rec = ["back to the middle", "re-centred. zen."]
     static let laser = ["pew pew?", "laser toggled. allegedly."]
-    static let chaos = ["AAAAAAA", "what did you DO", "sticker storm!!"]
+    static let fall = ["oh no", "it's all on the floor", "held it together. barely."]
     static let hello = ["the TV said hi", "connected!! hi TV"]
 }
 
 private struct ZPadView: View {
     let s: PadState
     @EnvironmentObject private var fx: SkinFX
-    @ObservedObject private var zs = ZineState.shared
+    private let zs = ZineState.shared
     @Environment(\.accessibilityReduceMotion) private var calm
     @State private var trail = ZTrail()
     @State private var live = false
@@ -949,8 +918,8 @@ private struct ZPadView: View {
             quipTag
                 .frame(maxHeight: .infinity, alignment: .top)
                 .padding(.top, 12)
-            if zs.chaos { chaosBanner }
         }
+        .zFall(77)
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { ZFrames.shared.set(\.pad, $0) }
         .onChange(of: s.touching) { _, on in if on { trail.pendingBreak = true } }
         .onChange(of: s.location) { _, p in
@@ -965,9 +934,8 @@ private struct ZPadView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + ZTrail.life + 0.15, execute: work)
         }
         .onReceive(fx.$last) { e in react(e) }
-        .onChange(of: zs.chaos) { _, on in if on { setQuip(ZQuips.chaos) } }
-        .onAppear { zs.reduceMotion = calm; scheduleIdle() }
-        .onChange(of: calm) { _, c in zs.reduceMotion = c }
+        .onReceive(zs.$fallStart) { start in if start != nil { setQuip(ZQuips.fall) } }
+        .onAppear { scheduleIdle() }
     }
 
     private func paper(_ torn: ZTorn) -> some View {
@@ -1098,26 +1066,9 @@ private struct ZPadView: View {
             .accessibilityHidden(true)
     }
 
-    private var chaosBanner: some View {
-        Text("CHAOS MODE!!")
-            .font(ZFont.display(30))
-            .foregroundStyle(ZInk.sticker)
-            .padding(.horizontal, 14).padding(.vertical, 4)
-            .background(ZInk.yellow)
-            .compositingGroup()
-            .shadow(color: ZInk.pink, radius: 0, x: 5, y: 5)
-            .shadow(color: ZInk.blue, radius: 0, x: -3, y: -3)
-            .rotationEffect(.degrees(calm ? 0 : -9))
-            .minimumScaleFactor(0.5)
-            .lineLimit(1)
-            .transition(calm ? .opacity : .scale(scale: 2).combined(with: .opacity))
-            .allowsHitTesting(false)
-    }
-
     private func react(_ e: SkinFX.Event) {
         switch e {
-        case .move(let dx, _):
-            zs.noteMove(dx: dx)
+        case .move:
             if Date().timeIntervalSince(lastDragQuip) > 1.6 { lastDragQuip = Date(); setQuip(ZQuips.drag) }
         case .padDown: zs.lastPadDown = Date()
         case .click: setQuip(ZQuips.click)
@@ -1133,7 +1084,7 @@ private struct ZPadView: View {
             case "laser": setQuip(ZQuips.laser)
             default: break
             }
-        case .padUp: break
+        case .padUp, .stripUp: break
         }
     }
 
@@ -1158,7 +1109,7 @@ private struct ZPadView: View {
     }
 }
 
-// MARK: - Effects (bursts, confetti, critter)
+// MARK: - Effects (bursts)
 
 private struct ZParticle {
     var kind: Int
@@ -1192,8 +1143,6 @@ private struct ZEffects: View {
     @Environment(\.accessibilityReduceMotion) private var calm
     @State private var bursts: [ZBurst] = []
     @State private var bounds: CGRect = .zero
-    @State private var critter = false
-    @State private var critterSays = false
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -1203,23 +1152,11 @@ private struct ZEffects: View {
             corner
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { bounds = $0 }
+        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { r in
+            bounds = r
+            ZFrames.shared.screen = r
+        }
         .onReceive(fx.$last) { e in handle(e) }
-        .onReceive(fx.$clicks) { n in
-            if n >= 100 && !critter {
-                withAnimation(calm ? nil : .spring(response: 0.5, dampingFraction: 0.55)) { critter = true }
-                critterSays = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) { withAnimation { critterSays = false } }
-            }
-        }
-        .onReceive(ZineState.shared.confetti) { n in
-            guard !calm, bounds.width > 40, bounds.height > 120 else { return }
-            let p = CGPoint(x: .random(in: 20...(bounds.width - 20)), y: .random(in: 60...(bounds.height - 60)))
-            addBurst(at: p, count: 6, word: n % 3 == 0)
-        }
-        .onReceive(ZineState.shared.burstAt) { g in
-            addBurst(at: CGPoint(x: g.x - bounds.minX, y: g.y - bounds.minY), count: 12, word: true)
-        }
     }
 
     private func local(_ r: CGRect) -> CGRect { r.offsetBy(dx: -bounds.minX, dy: -bounds.minY) }
@@ -1313,36 +1250,15 @@ private struct ZEffects: View {
         }
     }
 
-    /// The empty corner between the strips: a doodled arrow, or Clicky after 100 clicks.
+    /// The empty corner between the strips: a doodled arrow.
     @ViewBuilder private var corner: some View {
         if frames.vstrip != .zero && frames.hstrip != .zero {
             let v = local(frames.vstrip), h = local(frames.hstrip)
-            let r = CGRect(x: v.minX, y: h.minY, width: v.width, height: h.height)
-            ZStack {
-                if critter {
-                    ZCritter()
-                        .frame(width: 46, height: 46)
-                        .transition(calm ? .opacity : .offset(y: 30).combined(with: .scale(scale: 0.3)))
-                    if critterSays {
-                        Text("hi. i'm clicky.")
-                            .font(ZFont.hand(13))
-                            .foregroundStyle(.white)
-                            .fixedSize()
-                            .padding(.horizontal, 8).padding(.vertical, 3)
-                            .background(ZInk.sticker)
-                            .compositingGroup()
-                            .shadow(color: ZInk.pink, radius: 0, x: 2, y: 2)
-                            .rotationEffect(.degrees(calm ? 0 : -4))
-                            .offset(x: -74, y: -34)
-                            .transition(.opacity)
-                    }
-                } else {
-                    ZCornerArrow()
-                        .stroke(ZInk.inkSoft, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-                        .frame(width: 30, height: 30)
-                }
-            }
-            .position(x: r.midX, y: r.midY)
+            ZCornerArrow()
+                .stroke(ZInk.inkSoft, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                .frame(width: 30, height: 30)
+                .zFall(303)
+                .position(x: v.midX, y: h.midY)
         }
     }
 }
@@ -1356,32 +1272,5 @@ private struct ZCornerArrow: Shape {
         p.move(to: pt(6, 6)); p.addLine(to: pt(4, 13))
         p.move(to: pt(6, 6)); p.addLine(to: pt(12, 9))
         return p
-    }
-}
-
-private struct ZCritter: View {
-    var body: some View {
-        Canvas { ctx, size in
-            let s = size.width / 46
-            ctx.scaleBy(x: s, y: s)
-            var blob = Path()
-            blob.move(to: CGPoint(x: 8, y: 40))
-            blob.addCurve(to: CGPoint(x: 23, y: 6), control1: CGPoint(x: 2, y: 22), control2: CGPoint(x: 10, y: 6))
-            blob.addCurve(to: CGPoint(x: 38, y: 40), control1: CGPoint(x: 37, y: 6), control2: CGPoint(x: 44, y: 22))
-            blob.closeSubpath()
-            ctx.fill(blob, with: .color(ZInk.pink))
-            ctx.stroke(blob, with: .color(ZInk.sticker), style: StrokeStyle(lineWidth: 2.5, lineJoin: .round))
-            for x in [17.0, 30.0] {
-                let eye = Path(ellipseIn: CGRect(x: x - 5, y: 15, width: 10, height: 10))
-                ctx.fill(eye, with: .color(.white))
-                ctx.stroke(eye, with: .color(ZInk.sticker), lineWidth: 2)
-                ctx.fill(Path(ellipseIn: CGRect(x: x - 1, y: 19, width: 4.5, height: 4.5)), with: .color(ZInk.sticker))
-            }
-            var smile = Path()
-            smile.move(to: CGPoint(x: 18, y: 31))
-            smile.addQuadCurve(to: CGPoint(x: 29, y: 31), control: CGPoint(x: 23.5, y: 36))
-            ctx.stroke(smile, with: .color(ZInk.sticker), style: StrokeStyle(lineWidth: 2.2, lineCap: .round))
-        }
-        .accessibilityHidden(true)
     }
 }

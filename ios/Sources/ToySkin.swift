@@ -8,13 +8,10 @@ import UIKit
 // that echoes what you just did.
 //
 // Easter eggs:
-//  1. Knob snaps off: turn the speed knob to max (hare), keep cranking. It strains, pops off,
-//     bounces down the remote and snaps back in.
-//  2. Limited-edition shells: tap the LCD status line 5 times quickly ("screw 20% loose"…).
-//     The corner screws spin and pop, the shell swaps: Rubber Duck, Mint Soap, Grape Soda, Glow,
-//     then back to stock. Persisted in UserDefaults "toyEdition".
-//  3. Turbo: ▲▲▼▼◀▶◀▶ on the thumbwheels (or two-finger scroll) → rainbow glow for 10 s.
-//  4. Bonus: tap the speaker grille. It honks.
+//  1. Barrel roll: swipe ▲▲▼▼◀▶◀▶ on the thumbwheels (or two-finger scroll) → the whole remote
+//     spins two full turns and lands.
+//     Each swipe counts once however many steps it moves, so a long swipe doesn't break the code.
+//  2. Tap the speaker grille. It honks.
 
 struct ToySkin: RemoteSkin {
     var colorScheme: ColorScheme? { nil }
@@ -35,7 +32,6 @@ struct ToySkin: RemoteSkin {
     func subtitle(status: String) -> AnyView { AnyView(ToySubtitle(status: status)) }
     func gear(pressed: Bool) -> AnyView { AnyView(ToyGear(pressed: pressed)) }
     func headerPanel() -> AnyView { AnyView(ToyLCDPanel()) }
-    func effects() -> AnyView { AnyView(ToyEffects()) }
 }
 
 // MARK: - Colors and fonts
@@ -78,19 +74,6 @@ private enum ToyFont {
     static func lcd(_ size: CGFloat) -> Font { .custom("VT323-Regular", size: size) }
 }
 
-private enum ToyEdition: Int, CaseIterable {
-    case stock, duck, mint, grape, glow
-    var name: String {
-        switch self {
-        case .stock: return "STOCK"
-        case .duck: return "RUBBER DUCK"
-        case .mint: return "MINT SOAP"
-        case .grape: return "GRAPE SODA"
-        case .glow: return "GLOW"
-        }
-    }
-}
-
 private struct ToyPalette {
     var shell, shellHi, shellLo, label, well: Color
     var rubber, rubberHi, rubberLo, rubberInk: Color
@@ -100,7 +83,6 @@ private struct ToyPalette {
     var pad, padDot, padLogo, padHint: Color
     var pcb: Bool
     var darkShell: Bool
-    var glowEdition = false
 
     static let light = ToyPalette(
         shell: toyHex(0xE8E2D5), shellHi: toyHex(0xFFFDF7), shellLo: toyHex(0xB7AD99), label: toyHex(0x6E6450), well: toyHex(0x8F8571),
@@ -118,35 +100,7 @@ private struct ToyPalette {
         pad: toyHex(0x23242A), padDot: .white.opacity(0.05), padLogo: toyHex(0x8A8B96), padHint: toyHex(0xB3AFA6),
         pcb: true, darkShell: true)
 
-    static func make(_ scheme: ColorScheme, _ ed: ToyEdition) -> ToyPalette {
-        var p = scheme == .dark ? dark : light
-        // Limited-edition plastics are the same in both appearances; rubber and LCD follow the system.
-        func shell(_ s: UInt32, _ hi: UInt32, _ lo: UInt32, _ label: UInt32, _ well: UInt32,
-                   pad: UInt32, dot: Color, logo: UInt32, hint: UInt32,
-                   accent: UInt32, accentHi: UInt32, accentLo: UInt32, accentInk: UInt32, darkShell: Bool) {
-            p.shell = toyHex(s); p.shellHi = toyHex(hi); p.shellLo = toyHex(lo); p.label = toyHex(label); p.well = toyHex(well)
-            p.pad = toyHex(pad); p.padDot = dot; p.padLogo = toyHex(logo); p.padHint = toyHex(hint)
-            p.accent = toyHex(accent); p.accentHi = toyHex(accentHi); p.accentLo = toyHex(accentLo); p.accentInk = toyHex(accentInk)
-            p.darkShell = darkShell; p.pcb = false
-        }
-        switch ed {
-        case .stock: break
-        case .duck:
-            shell(0xFFD23F, 0xFFF3B0, 0xC89800, 0x6E5300, 0x8A6A00, pad: 0xF4C51E, dot: .black.opacity(0.08), logo: 0x8A6A00, hint: 0x5C4600,
-                  accent: 0x2F6BFF, accentHi: 0x7AA0FF, accentLo: 0x163FB0, accentInk: 0xFFFFFF, darkShell: false)
-        case .mint:
-            shell(0xBDE5D1, 0xEEFFF6, 0x7AB298, 0x3D7259, 0x4A7A63, pad: 0xA8D8C1, dot: .black.opacity(0.07), logo: 0x4A7A63, hint: 0x2B5241,
-                  accent: 0xFF4F7E, accentHi: 0xFF8FAE, accentLo: 0xBE1D4B, accentInk: 0xFFFFFF, darkShell: false)
-        case .grape:
-            shell(0x6E55E6, 0xA996FF, 0x3A2A9A, 0xF2EEFF, 0x24186A, pad: 0x5D45D2, dot: .white.opacity(0.08), logo: 0xB9ABFF, hint: 0xF0ECFF,
-                  accent: 0xFFD23F, accentHi: 0xFFF0A0, accentLo: 0xB88E00, accentInk: 0x3A2C00, darkShell: true)
-        case .glow:
-            shell(0xDDF6C4, 0xF7FFEF, 0x98C474, 0x4F7A33, 0x557A38, pad: 0xCDEDAE, dot: .black.opacity(0.06), logo: 0x557A38, hint: 0x3C5A26,
-                  accent: 0x18B86A, accentHi: 0x6BE6A2, accentLo: 0x0B7A43, accentInk: 0xF2FFF6, darkShell: false)
-            p.glowEdition = true
-        }
-        return p
-    }
+    static func make(_ scheme: ColorScheme) -> ToyPalette { scheme == .dark ? dark : light }
 }
 
 /// Debossed text on the shell: a highlight below on light plastic, a shadow above on dark.
@@ -161,26 +115,15 @@ private extension View {
 private final class ToyStore: ObservableObject {
     static let shared = ToyStore()
 
-    @Published var edition: ToyEdition
     /// Temporary LCD text; nil shows the status.
     @Published var message: String?
     @Published var flash = 0
-    @Published var turbo = false
-    @Published var screwTwist = 0
-    @Published var screwPop = 0
-    @Published var knobOff = false
-    @Published var knobDrop = 0
-    /// Knob cap center in global coordinates (not published: read when the knob falls).
-    var knobCenter: CGPoint = .zero
 
     private var messageToken = 0
-    private var turboToken = 0
     private var arrows = ""
+    /// Direction of the swipe in progress: repeats within one swipe count once toward the code.
+    private var swipeDir: Character?
     private var okAt = Date.distantPast
-
-    init() {
-        edition = ToyEdition(rawValue: UserDefaults.standard.integer(forKey: "toyEdition")) ?? .stock
-    }
 
     func say(_ text: String, for seconds: Double = 1.3) {
         message = text
@@ -196,7 +139,8 @@ private final class ToyStore: ObservableObject {
     /// Every SkinFX event passes through here (subscribed by the LCD subtitle).
     func handle(_ e: SkinFX.Event) {
         switch e {
-        case .padDown, .padUp, .move: return
+        case .padDown, .move: return
+        case .padUp, .stripUp: swipeDir = nil
         case .click:
             // OK emits button(ok) then click; keep "OK" on the LCD.
             if Date().timeIntervalSince(okAt) < 0.15 { return }
@@ -205,8 +149,10 @@ private final class ToyStore: ObservableObject {
         case .step(let dx, let dy):
             let c: Character = dy < 0 ? "U" : dy > 0 ? "D" : dx < 0 ? "L" : "R"
             say(["U": "▲ UP", "D": "▼ DOWN", "L": "◄ LEFT", "R": "► RIGHT"][c] ?? "", for: 0.8)
+            guard c != swipeDir else { return }
+            swipeDir = c
             arrows = String((arrows + String(c)).suffix(8))
-            if arrows == "UUDDLRLR" { arrows = ""; startTurbo() }
+            if arrows == "UUDDLRLR" { arrows = ""; barrelRoll() }
         case .button(let id):
             switch id {
             case "back": say("◄ BACK")
@@ -224,45 +170,16 @@ private final class ToyStore: ObservableObject {
         }
     }
 
-    func startTurbo() {
-        turboToken &+= 1
-        let token = turboToken
-        withAnimation(.easeOut(duration: 0.3)) { turbo = true }
+    func barrelRoll() {
+        ScreenFX.shared.barrelRoll()
         UINotificationFeedbackGenerator().notificationOccurred(.success)
-        say("* TURBO MODE * 10s", for: 2.5)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 10) { [weak self] in
-            guard let self, self.turboToken == token else { return }
-            withAnimation(.easeInOut(duration: 0.8)) { self.turbo = false }
-            self.say("turbo cooled down")
+        say("DO A BARREL ROLL!", for: 1.6)
+        for t in [0.35, 0.65, 0.95, 1.25] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + t) { Haptics.tap(.rigid) }
         }
-    }
-
-    func nextEdition() {
-        let next = ToyEdition(rawValue: (edition.rawValue + 1) % ToyEdition.allCases.count) ?? .stock
-        UserDefaults.standard.set(next.rawValue, forKey: "toyEdition")
-        screwPop &+= 1
-        withAnimation(.easeInOut(duration: 0.5)) { edition = next }
-        Haptics.tap(.heavy)
-        say(next == .stock ? "BACK TO STOCK" : "LTD EDITION: \(next.name)", for: 2)
-    }
-
-    func breakKnob(reduceMotion: Bool) {
-        guard !knobOff else { return }
-        knobOff = true
-        knobDrop &+= 1
-        UINotificationFeedbackGenerator().notificationOccurred(.error)
-        say("OOPS. KNOB FELL OFF.", for: 1.6)
-        let duration = reduceMotion ? 1.4 : ToyFall.duration
-        if !reduceMotion {
-            for t in [0.38, 0.56, 0.68] {
-                DispatchQueue.main.asyncAfter(deadline: .now() + duration * t) { Haptics.tap(.light) }
-            }
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
-            guard let self else { return }
-            self.knobOff = false
-            Haptics.tap(.rigid)
-            self.say("SNAP! GOOD AS NEW.")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.7) { [weak self] in
+            Haptics.tap(.heavy)
+            self?.say("STUCK THE LANDING", for: 1.6)
         }
     }
 }
@@ -273,7 +190,7 @@ private protocol ToyLooking: View {
     var scheme: ColorScheme { get }
 }
 private extension ToyLooking {
-    var p: ToyPalette { ToyPalette.make(scheme, store.edition) }
+    var p: ToyPalette { ToyPalette.make(scheme) }
 }
 
 // MARK: - Shared pieces
@@ -358,11 +275,6 @@ private struct ToyBackdrop: ToyLooking {
                 LinearGradient(stops: [.init(color: .clear, location: 0.7), .init(color: p.shellLo.opacity(0.35), location: 1)],
                                startPoint: .top, endPoint: .bottom)
                 if p.pcb { PCBTraces().equatable() }
-                if p.glowEdition {
-                    RoundedRectangle(cornerRadius: 56, style: .continuous)
-                        .strokeBorder(toyHex(0xAAFF78).opacity(0.55), lineWidth: 10)
-                        .blur(radius: 14)
-                }
             }
         }
     }
@@ -471,17 +383,13 @@ private struct ToyKey: ToyLooking {
     }
 
     private func bulb(on: Bool) -> some View {
-        let turbo = store.turbo && on
-        return TimelineView(.animation(minimumInterval: 1 / 30, paused: !turbo || reduceMotion)) { tl in
-            Circle()
-                .fill(on ? AnyShapeStyle(RadialGradient(colors: [.white, toyHex(0xFF3B3B), toyHex(0xAA0000)],
-                                                        center: UnitPoint(x: 0.35, y: 0.3), startRadius: 0, endRadius: 6))
-                         : AnyShapeStyle(toyHex(0x4A1B1B).shadow(.inner(color: .black.opacity(0.5), radius: 1, y: 1))))
-                .frame(width: 9, height: 9)
-                .shadow(color: on ? toyHex(0xFF3B3B) : .clear, radius: 4)
-                .shadow(color: on ? toyHex(0xFF3B3B).opacity(0.8) : .clear, radius: 1)
-                .hueRotation(.degrees(turbo ? (reduceMotion ? 120 : tl.date.timeIntervalSinceReferenceDate * 360) : 0))
-        }
+        Circle()
+            .fill(on ? AnyShapeStyle(RadialGradient(colors: [.white, toyHex(0xFF3B3B), toyHex(0xAA0000)],
+                                                    center: UnitPoint(x: 0.35, y: 0.3), startRadius: 0, endRadius: 6))
+                     : AnyShapeStyle(toyHex(0x4A1B1B).shadow(.inner(color: .black.opacity(0.5), radius: 1, y: 1))))
+            .frame(width: 9, height: 9)
+            .shadow(color: on ? toyHex(0xFF3B3B) : .clear, radius: 4)
+            .shadow(color: on ? toyHex(0xFF3B3B).opacity(0.8) : .clear, radius: 1)
     }
 
     private func okFace(_ p: ToyPalette, shape: RoundedRectangle, down: Bool) -> some View {
@@ -660,7 +568,8 @@ private struct ToySpeed: ToyLooking {
     @State private var dragging = false
     @State private var last: CGSize = .zero
     @State private var acc: CGFloat = 0
-    @State private var over: CGFloat = 0
+    /// Already told the user this turn that the knob is at max.
+    @State private var maxed = false
     @State private var honks = 0
 
     private static let names = ["CRAWL", "AMBLE", "TROT", "ZOOM", "HARE!"]
@@ -672,8 +581,6 @@ private struct ToySpeed: ToyLooking {
     private var index: Int {
         detents.indices.min { abs(detents[$0] - value) < abs(detents[$1] - value) } ?? 2
     }
-    private var strain: Double { index == 4 ? min(26, Double(over) / 5) : 0 }
-
     var body: some View {
         let p = p
         HStack(spacing: 8) {
@@ -708,8 +615,7 @@ private struct ToySpeed: ToyLooking {
     }
 
     private func knob(_ p: ToyPalette) -> some View {
-        let angle = Self.angles[index] + strain
-        let jitter: CGFloat = over > 0 ? (Int(over / 11) % 2 == 0 ? 1 : -1) : 0
+        let angle = Self.angles[index]
         return ZStack {
             ForEach(0..<5, id: \.self) { i in
                 Circle()
@@ -719,27 +625,14 @@ private struct ToySpeed: ToyLooking {
                     .offset(y: -27.5)
                     .rotationEffect(.degrees(Self.angles[i]))
             }
-            // Socket and its square peg (visible when the knob is off).
-            Circle()
-                .fill(p.well.shadow(.inner(color: .black.opacity(0.5), radius: 3, y: 3)))
-                .padding(7)
-            RoundedRectangle(cornerRadius: 2)
-                .fill(toyHex(0x9A9CA4).shadow(.inner(color: .black.opacity(0.3), radius: 0, y: -2)))
-                .frame(width: 10, height: 10)
             ToyKnobCap(p: p)
                 .rotationEffect(.degrees(angle))
                 .frame(width: 42, height: 42)
                 .shadow(color: p.rubberLo, radius: 0, x: 0, y: 4)
                 .shadow(color: .black.opacity(0.4), radius: 5, x: 0, y: 7)
-                .offset(x: jitter, y: -2)
-                .onGeometryChange(for: CGPoint.self) { proxy in
-                    let f = proxy.frame(in: .global)
-                    return CGPoint(x: f.midX, y: f.midY)
-                } action: { store.knobCenter = $0 }
-                .opacity(store.knobOff ? 0 : 1)
+                .offset(y: -2)
                 .animation(reduceMotion ? .easeOut(duration: 0.15) : .spring(response: dragging ? 0.12 : 0.35, dampingFraction: 0.45),
                            value: angle)
-                .animation(.easeOut(duration: 0.2), value: store.knobOff)
         }
         .frame(width: 60, height: 60)
         .contentShape(Circle())
@@ -749,7 +642,7 @@ private struct ToySpeed: ToyLooking {
                 .onEnded { _ in
                     dragging = false
                     acc = 0
-                    over = 0
+                    maxed = false
                 }
         )
         .accessibilityElement()
@@ -766,8 +659,7 @@ private struct ToySpeed: ToyLooking {
     }
 
     private func dragChanged(_ g: DragGesture.Value) {
-        if store.knobOff { return }
-        if !dragging { dragging = true; last = .zero; acc = 0; over = 0 }
+        if !dragging { dragging = true; last = .zero; acc = 0; maxed = false }
         // Right or up turns clockwise (faster).
         let d = (g.translation.width - last.width) - (g.translation.height - last.height)
         last = g.translation
@@ -776,21 +668,16 @@ private struct ToySpeed: ToyLooking {
             acc -= detentDistance
             if index < 4 {
                 set(index + 1)
-            } else {
-                if over == 0 { store.say("MAX! IT DOESN'T GO TO 6", for: 1.6) }
-                over += detentDistance
+            } else if !maxed {
+                maxed = true
+                store.say("MAX! IT DOESN'T GO TO 6", for: 1.6)
                 Haptics.tap(.soft)
             }
         }
         while acc <= -detentDistance {
             acc += detentDistance
-            over = 0
+            maxed = false
             set(index - 1)
-        }
-        if over >= detentDistance * 6 {
-            over = 0
-            acc = 0
-            store.breakKnob(reduceMotion: reduceMotion)
         }
     }
 
@@ -855,16 +742,6 @@ private struct ToyKnobCap: View {
                 .padding(.top, 7)
         }
     }
-}
-
-/// Keyframe values for the falling knob (effects layer).
-private struct ToyFall {
-    static let duration = 2.2
-    var x: CGFloat = 0
-    var y: CGFloat = 0
-    var rot: Double = 100
-    var sx: CGFloat = 1
-    var sy: CGFloat = 1
 }
 
 // MARK: - Header
@@ -947,8 +824,6 @@ private struct ToySubtitle: ToyLooking {
     @Environment(\.colorScheme) var scheme
     @EnvironmentObject private var fx: SkinFX
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var taps = 0
-    @State private var lastTap = Date.distantPast
 
     var body: some View {
         let p = p
@@ -975,26 +850,8 @@ private struct ToySubtitle: ToyLooking {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.trailing, 8)
-            .contentShape(Rectangle())
-            .onTapGesture(perform: tap)
             .onReceive(fx.$last.dropFirst()) { store.handle($0) }
             .accessibilityLabel(text)
-    }
-
-    /// Five quick taps loosen the screws and swap the shell.
-    private func tap() {
-        let now = Date()
-        if now.timeIntervalSince(lastTap) > 1.5 { taps = 0 }
-        lastTap = now
-        taps += 1
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) { store.screwTwist += 1 }
-        if taps >= 5 {
-            taps = 0
-            store.nextEdition()
-        } else {
-            Haptics.tick()
-            store.say("SCREW \(taps * 20)% LOOSE", for: 1.5)
-        }
     }
 }
 
@@ -1031,155 +888,5 @@ private struct ToyGear: ToyLooking {
         .animation(pressed ? .easeOut(duration: 0.06)
                    : (reduceMotion ? .easeOut(duration: 0.15) : .spring(response: 0.4, dampingFraction: 0.4)),
                    value: pressed)
-    }
-}
-
-// MARK: - Effects: screws, turbo glow, the falling knob
-
-private struct ToyEffects: ToyLooking {
-    @ObservedObject var store = ToyStore.shared
-    @Environment(\.colorScheme) var scheme
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    /// The layer's frame in global space (it ignores the safe area, so it is the whole screen).
-    @State private var frame: CGRect = .zero
-    /// The layer ignores the safe area, so a proxy reports zero insets; the window's are read when the
-    /// frame changes. (Reading UIKit geometry inside `body` stalls this view's updates.)
-    @State private var insets = EdgeInsets()
-
-    var body: some View {
-        let p = p
-        let s = insets
-        let w = frame.width, h = frame.height
-        // Corners of the face: just inside the safe area at the top, in the home-indicator band below.
-        let top = s.top > 0 ? s.top + 7 : 12
-        let bottom = s.bottom > 0 ? h - max(s.bottom - 8, 14) : h - 12
-        let corners = [CGPoint(x: s.leading + 13, y: top), CGPoint(x: w - s.trailing - 13, y: top),
-                       CGPoint(x: s.leading + 24, y: bottom), CGPoint(x: w - s.trailing - 24, y: bottom)]
-        ZStack(alignment: .topLeading) {
-            Color.clear
-            if store.turbo { TurboGlow().transition(.opacity) }
-            if w > 0 {
-                ForEach(0..<4, id: \.self) { i in
-                    ToyScrew(p: p, angle: [12, 71, 140, 203][i] + Double(store.screwTwist) * 72, pop: store.screwPop)
-                        .position(corners[i])
-                }
-            }
-            if !reduceMotion {
-                ToyKnobCap(p: p)
-                    .keyframeAnimator(initialValue: ToyFall(), trigger: store.knobDrop) { content, v in
-                        content
-                            .rotationEffect(.degrees(v.rot))
-                            .frame(width: 42, height: 42)
-                            .shadow(color: p.rubberLo, radius: 0, x: 0, y: 4)
-                            .shadow(color: .black.opacity(0.4), radius: 5, x: 0, y: 7)
-                            .scaleEffect(x: v.sx, y: v.sy, anchor: .bottom)
-                            .offset(x: v.x, y: v.y)
-                    } keyframes: { _ in fallKeyframes(fall: max(160, h * 0.45)) }
-                    .position(x: store.knobCenter.x - frame.minX, y: store.knobCenter.y - frame.minY)
-                    .opacity(store.knobOff ? 1 : 0)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { f in
-            frame = f
-            DispatchQueue.main.async { insets = Self.windowInsets }
-        }
-    }
-
-    private static var windowInsets: EdgeInsets {
-        let w = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first?.keyWindow
-        let i = w?.safeAreaInsets ?? .zero
-        return EdgeInsets(top: i.top, leading: i.left, bottom: i.bottom, trailing: i.right)
-    }
-
-    @KeyframesBuilder<ToyFall>
-    private func fallKeyframes(fall f: CGFloat) -> some Keyframes<ToyFall> {
-        let T = ToyFall.duration
-        // (time fraction, x, y, rotation, sx, sy) from the prototype's bounce path.
-        let path: [(Double, CGFloat, CGFloat, Double, CGFloat, CGFloat)] = [
-            (0.18, 30, -90, 400, 1, 1), (0.38, 70, f, 700, 1.05, 0.85), (0.48, 90, f - 60, 820, 1, 1),
-            (0.56, 105, f, 900, 1.04, 0.9), (0.62, 112, f - 18, 940, 1, 1), (0.68, 118, f, 960, 1, 1),
-            (0.78, 118, f, 960, 1, 1), (0.90, 0, -40, 1340, 0.6, 0.6), (1.0, 0, 0, 1540, 1, 1),
-        ]
-        let spans = path.indices.map { path[$0].0 - ($0 == 0 ? 0 : path[$0 - 1].0) }
-        KeyframeTrack(\.x) {
-            MoveKeyframe(0)
-            for (i, k) in path.enumerated() { LinearKeyframe(k.1, duration: spans[i] * T) }
-        }
-        KeyframeTrack(\.y) {
-            MoveKeyframe(0)
-            for (i, k) in path.enumerated() {
-                // Falls accelerate, rises decelerate.
-                let falling = i == 0 ? false : k.2 > path[i - 1].2
-                LinearKeyframe(k.2, duration: spans[i] * T, timingCurve: falling ? .easeIn : .easeOut)
-            }
-        }
-        KeyframeTrack(\.rot) {
-            MoveKeyframe(100)
-            for (i, k) in path.enumerated() { LinearKeyframe(k.3, duration: spans[i] * T) }
-        }
-        KeyframeTrack(\.sx) {
-            MoveKeyframe(1)
-            for (i, k) in path.enumerated() { LinearKeyframe(k.4, duration: spans[i] * T) }
-        }
-        KeyframeTrack(\.sy) {
-            MoveKeyframe(1)
-            for (i, k) in path.enumerated() { LinearKeyframe(k.5, duration: spans[i] * T) }
-        }
-    }
-}
-
-private struct ToyScrew: View {
-    let p: ToyPalette
-    let angle: Double
-    let pop: Int
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    var body: some View {
-        ZStack {
-            Circle()
-                .fill(RadialGradient(stops: [.init(color: .white, location: 0), .init(color: toyHex(0xD9D9DE), location: 0.3),
-                                             .init(color: toyHex(0x8D8F97), location: 0.75), .init(color: toyHex(0x5D5F66), location: 1)],
-                                     center: UnitPoint(x: 0.35, y: 0.3), startRadius: 0, endRadius: 9))
-                .overlay(Circle().strokeBorder(Color.black.opacity(0.3), lineWidth: 0.5))
-                .background(Circle().fill(p.shellLo.opacity(0.6)).padding(-2))
-                .background(Circle().fill(p.shellHi).padding(-2).offset(y: 1))
-            ZStack {
-                Capsule().frame(width: 2, height: 9)
-                Capsule().frame(width: 9, height: 2)
-            }
-            .foregroundStyle(toyHex(0x45474E))
-            .shadow(color: .white.opacity(0.5), radius: 0, x: 1, y: 0)
-            .rotationEffect(.degrees(angle))
-        }
-        .frame(width: 14, height: 14)
-        .keyframeAnimator(initialValue: CGSize(width: 1, height: 0), trigger: reduceMotion ? 0 : pop) { content, v in
-            content.scaleEffect(v.width).offset(y: v.height)
-        } keyframes: { _ in
-            KeyframeTrack(\.width) {
-                CubicKeyframe(1.5, duration: 0.25); CubicKeyframe(0.9, duration: 0.24); CubicKeyframe(1, duration: 0.21)
-            }
-            KeyframeTrack(\.height) {
-                CubicKeyframe(-10, duration: 0.25); CubicKeyframe(2, duration: 0.24); CubicKeyframe(0, duration: 0.21)
-            }
-        }
-    }
-}
-
-private struct TurboGlow: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    private let rainbow: [Color] = [.red, .orange, .yellow, .green, .cyan, .blue, .purple, .pink, .red]
-
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 30, paused: reduceMotion)) { tl in
-            let a = reduceMotion ? 0 : tl.date.timeIntervalSinceReferenceDate * 240
-            let shape = RoundedRectangle(cornerRadius: 56, style: .continuous)
-            let g = AngularGradient(colors: rainbow, center: .center, angle: .degrees(a))
-            ZStack {
-                shape.strokeBorder(g, lineWidth: 10).blur(radius: 12)
-                shape.strokeBorder(g, lineWidth: 3).opacity(0.9)
-            }
-        }
     }
 }

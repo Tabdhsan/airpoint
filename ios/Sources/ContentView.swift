@@ -153,7 +153,8 @@ final class AppModel: ObservableObject {
         case .twoFingerTap:
             fx.emit(.button(id: "back"))
             press(.back)
-        case .ended: break
+        case .ended:
+            fx.emit(.stripUp)
         }
     }
 
@@ -207,19 +208,22 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             skin.backdrop().ignoresSafeArea()
-            GeometryReader { geo in
-                // Unfolded iPhone Duo (626x890 pt, usually held sideways) or any landscape screen:
-                // two-handed layout. The folded Duo (narrow cover screen) and regular phones get one column.
-                if geo.size.width > 560 || geo.size.width / max(geo.size.height, 1) > 0.62 {
-                    wideLayout
-                } else {
-                    tallLayout
+            ZStack {
+                GeometryReader { geo in
+                    // Unfolded iPhone Duo (626x890 pt, usually held sideways) or any landscape screen:
+                    // two-handed layout. The folded Duo (narrow cover screen) and regular phones get one column.
+                    if geo.size.width > 560 || geo.size.width / max(geo.size.height, 1) > 0.62 {
+                        wideLayout
+                    } else {
+                        tallLayout
+                    }
                 }
+                .padding()
+                skin.effects()
+                    .allowsHitTesting(false)
+                    .ignoresSafeArea()
             }
-            .padding()
-            skin.effects()
-                .allowsHitTesting(false)
-                .ignoresSafeArea()
+            .modifier(BarrelRoll())
         }
         .id(model.theme)   // fresh skin state (easter eggs, animations) when switching themes
         .environment(\.skin, skin)
